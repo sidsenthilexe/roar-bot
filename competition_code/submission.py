@@ -84,9 +84,9 @@ class RoarCompetitionSolution:
         waypoint_to_follow = self.maneuverable_waypoints[(self.current_waypoint_idx + 10) % len(self.maneuverable_waypoints)]
 
         # 
-        speed_waypoint_1 = self.maneuverable_waypoints[(self.current_waypoint_idx + 10) % len(self.maneuverable_waypoints)]
+        speed_waypoint_1 = self.maneuverable_waypoints[(self.current_waypoint_idx + 15) % len(self.maneuverable_waypoints)]
 
-        speed_waypoint_2 = self.maneuverable_waypoints[(self.current_waypoint_idx + 20) % len(self.maneuverable_waypoints)]
+        speed_waypoint_2 = self.maneuverable_waypoints[(self.current_waypoint_idx + 30) % len(self.maneuverable_waypoints)]
 
         vector_to_speed_waypoint_1 = (speed_waypoint_1.location - self.maneuverable_waypoints[self.current_waypoint_idx].location)[:2]
         
@@ -114,11 +114,11 @@ class RoarCompetitionSolution:
         #
         target_speed = 30
         if (abs(heading_diff) < 0.15):
-            target_speed = 45
+            target_speed = 55
         elif (abs(heading_diff) < 0.35):
-            target_speed = 35
+            target_speed = 40
         elif (abs(heading_diff) < 0.6):
-            target_speed = 25
+            target_speed = 15
         else:
             target_speed = 15
 
