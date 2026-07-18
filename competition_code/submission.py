@@ -81,7 +81,22 @@ class RoarCompetitionSolution:
             self.maneuverable_waypoints
         )
          # We use the 3rd waypoint ahead of the current waypoint as the target waypoint
-        waypoint_to_follow = self.maneuverable_waypoints[(self.current_waypoint_idx + 5) % len(self.maneuverable_waypoints)]
+        waypoint_to_follow = self.maneuverable_waypoints[(self.current_waypoint_idx + 10) % len(self.maneuverable_waypoints)]
+
+        # 
+        speed_waypoint_1 = self.maneuverable_waypoints[(self.current_waypoint_idx + 10) % len(self.maneuverable_waypoints)]
+
+        speed_waypoint_2 = self.maneuverable_waypoints[(self.current_waypoint_idx + 20) % len(self.maneuverable_waypoints)]
+
+        vector_to_speed_waypoint_1 = (speed_waypoint_1.location - self.maneuverable_waypoints[self.current_waypoint_idx].location)[:2]
+        
+        vector_to_speed_waypoint_2 = (speed_waypoint_2.location - speed_waypoint_1.location)[:2]
+
+        heading_to_speed_waypoint_1 = np.arctan2(vector_to_speed_waypoint_1[1],vector_to_speed_waypoint_1[0])
+
+        heading_to_speed_waypoint_2 = np.arctan2(vector_to_speed_waypoint_2[1],vector_to_speed_waypoint_2[0])
+
+        heading_diff = normalize_rad(heading_to_speed_waypoint_2 - heading_to_speed_waypoint_1)
 
         # Calculate delta vector towards the target waypoint
         vector_to_waypoint = (waypoint_to_follow.location - vehicle_location)[:2]
@@ -96,8 +111,20 @@ class RoarCompetitionSolution:
         ) if vehicle_velocity_norm > 1e-2 else -np.sign(delta_heading)
         steer_control = np.clip(steer_control, -1.0, 1.0)
 
+        #
+        target_speed = 30
+        if (abs(heading_diff) < 0.15):
+            target_speed = 45
+        elif (abs(heading_diff) < 0.35):
+            target_speed = 35
+        elif (abs(heading_diff) < 0.6):
+            target_speed = 25
+        else:
+            target_speed = 15
+
+
         # Proportional controller to control the vehicle's speed towards 40 m/s
-        throttle_control = 0.1 * (30 - vehicle_velocity_norm)
+        throttle_control = 0.1 * (target_speed - vehicle_velocity_norm)
 
         control = {
             "throttle": np.clip(throttle_control, 0.0, 1.0),
