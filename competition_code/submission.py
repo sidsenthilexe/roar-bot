@@ -84,9 +84,9 @@ class RoarCompetitionSolution:
         waypoint_to_follow = self.maneuverable_waypoints[(self.current_waypoint_idx + 10) % len(self.maneuverable_waypoints)]
 
         # 
-        speed_waypoint_1 = self.maneuverable_waypoints[(self.current_waypoint_idx + 15) % len(self.maneuverable_waypoints)]
+        speed_waypoint_1 = self.maneuverable_waypoints[(self.current_waypoint_idx + 20) % len(self.maneuverable_waypoints)]
 
-        speed_waypoint_2 = self.maneuverable_waypoints[(self.current_waypoint_idx + 30) % len(self.maneuverable_waypoints)]
+        speed_waypoint_2 = self.maneuverable_waypoints[(self.current_waypoint_idx + 40) % len(self.maneuverable_waypoints)]
 
         vector_to_speed_waypoint_1 = (speed_waypoint_1.location - self.maneuverable_waypoints[self.current_waypoint_idx].location)[:2]
         
@@ -122,13 +122,13 @@ class RoarCompetitionSolution:
         if (curvature < 0.0025):
             target_speed = 55
         elif (curvature < 0.006):
-            target_speed = 40
+            target_speed = 45
         elif (curvature < 0.01):
-            target_speed = 25
+            target_speed = 30
         elif (curvature < 0.02):
-            target_speed = 15
+            target_speed = 20
         else:
-            target_speed = 5
+            target_speed = 10
 
 
         # Proportional controller to control the vehicle's speed towards 40 m/s
