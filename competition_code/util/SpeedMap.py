@@ -7,7 +7,7 @@ class SpeedMap:
         elif (curvature < 0.0005):
             return 65
         elif (curvature < 0.0025):
-            return 53
+            return 50
         elif (curvature < 0.006):
             return 45
         elif (curvature < 0.01):

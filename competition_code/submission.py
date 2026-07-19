@@ -6,6 +6,7 @@ Please do not change anything else but fill out the to-do sections.
 from typing import List, Tuple, Dict, Optional
 import roar_py_interface
 import numpy as np
+import matplotlib.pyplot as plt
 from util.SpeedMap import SpeedMap
 from util.SteerMap import SteerMap
 from util.WaypointCalculator import WaypointCalculator
@@ -131,8 +132,6 @@ class RoarCompetitionSolution:
 
         target_speed = SpeedMap.get_target(curvature)
 
-
-        # Proportional controller to control the vehicle's speed towards 40 m/s
         self.speed_controller.set_setpoint(target_speed)
         throttle_control = self.speed_controller.calculate(vehicle_velocity_norm)
 
