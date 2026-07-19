@@ -9,6 +9,7 @@ import numpy as np
 from util.SpeedMap import SpeedMap
 from util.SteerMap import SteerMap
 from util.WaypointCalculator import WaypointCalculator
+from util.PIDController import PIDController
 
 def normalize_rad(rad : float):
     return (rad + np.pi) % (2 * np.pi) - np.pi
@@ -59,6 +60,8 @@ class RoarCompetitionSolution:
             self.current_waypoint_idx,
             self.maneuverable_waypoints
         )
+
+        self.speed_controller = PIDController(0.1, 0.0, 0.0, 0.05)
 
 
     async def step(
@@ -130,7 +133,8 @@ class RoarCompetitionSolution:
 
 
         # Proportional controller to control the vehicle's speed towards 40 m/s
-        throttle_control = 0.1 * (target_speed - vehicle_velocity_norm)
+        self.speed_controller.set_setpoint(target_speed)
+        throttle_control = self.speed_controller.calculate(vehicle_velocity_norm)
 
         control = {
             "throttle": np.clip(throttle_control, 0.0, 1.0),
