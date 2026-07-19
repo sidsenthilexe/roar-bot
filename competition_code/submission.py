@@ -96,7 +96,13 @@ class RoarCompetitionSolution:
 
         heading_to_speed_waypoint_2 = np.arctan2(vector_to_speed_waypoint_2[1],vector_to_speed_waypoint_2[0])
 
+        distance_car_waypoint_to_speed_waypoint_1 = np.linalg.norm((speed_waypoint_1.location - self.maneuverable_waypoints[self.current_waypoint_idx].location)[:2])
+
+        distance_speed_waypoint_1_to_speed_waypoint_2 = np.linalg.norm((speed_waypoint_2.location - speed_waypoint_1.location)[:2])
+
         heading_diff = normalize_rad(heading_to_speed_waypoint_2 - heading_to_speed_waypoint_1)
+
+        curvature = abs(heading_diff) / (distance_car_waypoint_to_speed_waypoint_1 + distance_speed_waypoint_1_to_speed_waypoint_2)
 
         # Calculate delta vector towards the target waypoint
         vector_to_waypoint = (waypoint_to_follow.location - vehicle_location)[:2]
@@ -112,15 +118,17 @@ class RoarCompetitionSolution:
         steer_control = np.clip(steer_control, -1.0, 1.0)
 
         #
-        target_speed = 30
-        if (abs(heading_diff) < 0.15):
+        target_speed = 15
+        if (curvature < 0.0025):
             target_speed = 55
-        elif (abs(heading_diff) < 0.35):
+        elif (curvature < 0.006):
             target_speed = 40
-        elif (abs(heading_diff) < 0.6):
+        elif (curvature < 0.01):
+            target_speed = 25
+        elif (curvature < 0.02):
             target_speed = 15
         else:
-            target_speed = 15
+            target_speed = 5
 
 
         # Proportional controller to control the vehicle's speed towards 40 m/s
@@ -134,5 +142,6 @@ class RoarCompetitionSolution:
             "reverse": 0,
             "target_gear": 0
         }
+        print(f"Current waypoint idx: {self.current_waypoint_idx}, Curvature: {curvature}")
         await self.vehicle.apply_action(control)
         return control
