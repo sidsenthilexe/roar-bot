@@ -95,7 +95,7 @@ class RoarCompetitionSolution:
         current_waypoint = self.maneuverable_waypoints[self.current_waypoint_idx]
         target_waypoint = self.maneuverable_waypoints[(self.current_waypoint_idx + look_ahead) % len(self.maneuverable_waypoints)]
 
-        spd_look_ahead = max(20, int(vehicle_velocity_norm))
+        spd_look_ahead = np.cliip(int(vehicle_velocity_norm), 20, 50)
 
 
         
