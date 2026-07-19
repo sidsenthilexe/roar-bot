@@ -80,8 +80,20 @@ class RoarCompetitionSolution:
             self.current_waypoint_idx,
             self.maneuverable_waypoints
         )
+
+        #
+        steering_ahead = 18
+        if (vehicle_velocity_norm < 20):
+            steering_ahead = 6
+        elif (vehicle_velocity_norm < 35):
+            steering_ahead = 12
+        elif (vehicle_velocity_norm < 50):
+            steering_ahead = 18
+        else:
+            steering_ahead = 25
+
          # We use the 3rd waypoint ahead of the current waypoint as the target waypoint
-        waypoint_to_follow = self.maneuverable_waypoints[(self.current_waypoint_idx + 10) % len(self.maneuverable_waypoints)]
+        waypoint_to_follow = self.maneuverable_waypoints[(self.current_waypoint_idx + steering_ahead) % len(self.maneuverable_waypoints)]
 
         # 
         speed_waypoint_1 = self.maneuverable_waypoints[(self.current_waypoint_idx + 20) % len(self.maneuverable_waypoints)]
