@@ -130,7 +130,7 @@ class RoarCompetitionSolution:
 
 
         # Proportional controller to control the vehicle's speed towards 40 m/s
-        throttle_control = 0.1 * (target_speed - vehicle_velocity_norm)
+        throttle_control = 0.15 * (target_speed - vehicle_velocity_norm)
 
         control = {
             "throttle": np.clip(throttle_control, 0.0, 1.0),
