@@ -9,6 +9,8 @@ import numpy as np
 from util.SpeedMap import SpeedMap
 from util.SteerMap import SteerMap
 from util.WaypointCalculator import WaypointCalculator
+import matplotlib.pyplot as plt
+
 
 def normalize_rad(rad : float):
     return (rad + np.pi) % (2 * np.pi) - np.pi
@@ -54,6 +56,13 @@ class RoarCompetitionSolution:
         vehicle_location = self.location_sensor.get_last_gym_observation()
         vehicle_rotation = self.rpy_sensor.get_last_gym_observation()
         vehicle_velocity = self.velocity_sensor.get_last_gym_observation()
+        occupancy_map = self.occupancy_map_sensor.get_last_gym_observation()
+        #print(type(occupancy_map))
+        #print(occupancy_map.shape)
+        #print(occupancy_map.dtype)
+        #print(np.unique(occupancy_map))
+        #print(occupancy_map[22:28, 22:28, 0])
+        #print(occupancy_map[25,25])
 
         self.current_waypoint_idx = 10
         self.current_waypoint_idx = filter_waypoints(
@@ -78,13 +87,35 @@ class RoarCompetitionSolution:
         vehicle_rotation = self.rpy_sensor.get_last_gym_observation()
         vehicle_velocity = self.velocity_sensor.get_last_gym_observation()
         vehicle_velocity_norm = np.linalg.norm(vehicle_velocity)
+        occupancy_map = self.occupancy_map_sensor.get_last_gym_observation()
         
+        the_map = occupancy_map[:,:,0]
+        center_x = 25
+        center_y = 25
+
+        distance_pixels = 999
+        for x in range(center_x, 50):
+            if (the_map[x, center_y] == 0):
+                distance_pixels = x - center_x
+                break
+        print(f"Distance to obstacle in pixels: {distance_pixels}")
+
         # Find the waypoint closest to the vehicle
         self.current_waypoint_idx = filter_waypoints(
             vehicle_location,
             self.current_waypoint_idx,
             self.maneuverable_waypoints
         )
+
+        yaw = vehicle_rotation[2]
+        forward_vector = np.array([np.cos(yaw), np.sin(yaw)])
+        left_vector = np.array([-np.sin(yaw), np.cos(yaw)])
+
+        center = vehicle_location[:2]
+
+        edge_l = center + left_vector * self.vehicle._wrapped.bounding_box.extent[1]
+        edge_r = center - left_vector * self.vehicle._wrapped.bounding_box.extent[1]
+        edge_f = center + forward_vector * self.vehicle._wrapped.bounding_box.extent[0]
 
         #
         look_ahead = SteerMap.look_ahead_dist(vehicle_velocity_norm)
@@ -142,6 +173,6 @@ class RoarCompetitionSolution:
             "reverse": 0,
             "target_gear": 0
         }
-        print(f"Current waypoint idx: {self.current_waypoint_idx}, Curvature: {curvature}, Target Speed: {target_speed}, Current Speed: {vehicle_velocity_norm}, Throttle%: {throttle_control}")
+        #print(f"Current waypoint idx: {self.current_waypoint_idx}, Curvature: {curvature}, Target Speed: {target_speed}, Current Speed: {vehicle_velocity_norm}, Throttle%: {throttle_control}")
         await self.vehicle.apply_action(control)
         return control
