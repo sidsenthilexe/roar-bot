@@ -8,7 +8,7 @@ class WaypointCalculator:
 
     @classmethod
     def hdg(vector):
-        return np.arctan2(vector[1], vector[2])
+        return np.arctan2(vector[1], vector[0])
     
     @classmethod
     def dist(wp_1, wp_2):

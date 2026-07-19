@@ -6,9 +6,9 @@ Please do not change anything else but fill out the to-do sections.
 from typing import List, Tuple, Dict, Optional
 import roar_py_interface
 import numpy as np
-from util import SpeedMap
-from util import SteerMap
-from util import WaypointCalculator
+from util.SpeedMap import SpeedMap
+from util.SteerMap import SteerMap
+from util.WaypointCalculator import WaypointCalculator
 
 def normalize_rad(rad : float):
     return (rad + np.pi) % (2 * np.pi) - np.pi
