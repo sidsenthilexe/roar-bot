@@ -3,7 +3,7 @@ class SpeedMap:
     @staticmethod
     def get_target(curvature):
         if (curvature < 0.0005):
-            return 80
+            return 75
         elif (curvature < 0.001):
             return 65
         elif (curvature < 0.0025):
