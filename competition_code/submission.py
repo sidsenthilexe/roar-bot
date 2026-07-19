@@ -131,7 +131,9 @@ class RoarCompetitionSolution:
 
         #
         target_speed = 15
-        if (curvature < 0.0025):
+        if (curvature < 0.0005):
+            target_speed = 75
+        elif (curvature < 0.0025):
             target_speed = 55
         elif (curvature < 0.006):
             target_speed = 45
