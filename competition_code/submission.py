@@ -99,7 +99,7 @@ class RoarCompetitionSolution:
 
         vector_wp_1 = WaypointCalculator.vector_to_waypoint(speed_wp_1, current_waypoint)
         
-        vector_wp_2 = WaypointCalculator.vector_to_waypoint(speed_wp_2, speed_wp_2)
+        vector_wp_2 = WaypointCalculator.vector_to_waypoint(speed_wp_2, speed_wp_1)
 
         hdg_wp_1 = WaypointCalculator.hdg(vector_wp_1)
 
