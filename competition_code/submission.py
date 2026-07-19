@@ -62,7 +62,7 @@ class RoarCompetitionSolution:
             self.maneuverable_waypoints
         )
 
-        self.speed_controller = PIDController(0.1, 0.0, 0.0, 0.05)
+        self.speed_controller = PIDController(0.2, 0.0, 0.0, 0.05)
 
 
     async def step(
@@ -95,7 +95,7 @@ class RoarCompetitionSolution:
         current_waypoint = self.maneuverable_waypoints[self.current_waypoint_idx]
         target_waypoint = self.maneuverable_waypoints[(self.current_waypoint_idx + look_ahead) % len(self.maneuverable_waypoints)]
 
-        spd_look_ahead = np.clip(int(vehicle_velocity_norm), 20, 50)
+        spd_look_ahead = np.clip(int(vehicle_velocity_norm), 20, 45)
 
 
         
