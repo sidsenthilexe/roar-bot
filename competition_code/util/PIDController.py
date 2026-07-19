@@ -8,11 +8,11 @@ import math
 class PIDController:
 
     def __init__(self, kp, ki, kd, period = 0.02):
-        if (type(kp) != int or float):
+        if (type(kp) != int and type(kp) != float):
             raise TypeError("Kp must be int or float") 
-        if (type(ki) != int or float):
+        if (type(ki) != int and type(ki) != float):
             raise TypeError("Ki must be int or float")
-        if (type(kd) != int or float):
+        if (type(kd) != int and type(kd) != float):
             raise TypeError("Kd must be int or float")
         
         if (kp < 0.0):
@@ -53,11 +53,11 @@ class PIDController:
 
 
     def set_pid(self, kp, ki, kd):
-        if (type(kp) != int or float):
+        if (type(kp) != int and type(kp) != float):
             raise TypeError("Kp must be int or float") 
-        if (type(ki) != int or float):
+        if (type(ki) != int and type(ki) != float):
             raise TypeError("Ki must be int or float")
-        if (type(kd) != int or float):
+        if (type(kd) != int and type(kd) != float):
             raise TypeError("Kd must be int or float")
         
         if (kp < 0.0):
