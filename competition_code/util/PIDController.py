@@ -31,25 +31,25 @@ class PIDController:
         self.max_integral = 1.0
         self.min_integral = -1.0
 
-        self.max_input = None
-        self.min_input = None
+        self.max_input = 0.0
+        self.min_input = 0.0
 
-        self.continuous = None
+        self.continuous = False
 
-        self.error = None
-        self.error_derivative = None
+        self.error = 0.0
+        self.error_derivative = 0.0
         
-        self.prev_error = None
-        self.total_error = None
+        self.prev_error = 0.0
+        self.total_error = 0.0
         
         self.error_tolerance = 0.05
         self.error_derivative_tolerance = float('inf')
 
-        self.setpoint = None
-        self.measurement = None
+        self.setpoint = 0.0
+        self.measurement = 0.0
 
-        self.have_measurement = None
-        self.have_setpoint = None
+        self.have_measurement = False
+        self.have_setpoint = False
 
 
     def set_pid(self, kp, ki, kd):
