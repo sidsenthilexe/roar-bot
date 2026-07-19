@@ -95,11 +95,13 @@ class RoarCompetitionSolution:
         current_waypoint = self.maneuverable_waypoints[self.current_waypoint_idx]
         target_waypoint = self.maneuverable_waypoints[(self.current_waypoint_idx + look_ahead) % len(self.maneuverable_waypoints)]
 
+        spd_look_ahead = min(20, int(vehicle_velocity_norm))
+
 
         
-        speed_wp_1 = self.maneuverable_waypoints[(self.current_waypoint_idx + int(vehicle_velocity_norm)) % len(self.maneuverable_waypoints)]
+        speed_wp_1 = self.maneuverable_waypoints[(self.current_waypoint_idx + spd_look_ahead) % len(self.maneuverable_waypoints)]
 
-        speed_wp_2 = self.maneuverable_waypoints[(self.current_waypoint_idx + int(vehicle_velocity_norm)+20) % len(self.maneuverable_waypoints)]
+        speed_wp_2 = self.maneuverable_waypoints[(self.current_waypoint_idx + spd_look_ahead+20) % len(self.maneuverable_waypoints)]
 
         vector_wp_1 = WaypointCalculator.vector_to_waypoint(speed_wp_1, current_waypoint)
         
