@@ -152,7 +152,7 @@ class RoarCompetitionSolution:
         self.ax.autoscale_view()
         self.ax.set_ylim(top=100)
 
-        if self.step_counter % 1000 == 0:
+        if self.step_counter % 2769 == 0:
             name = "plot" + str(self.plots_out)
             self.fig.savefig(name, dpi=300, bbox_inches='tight')
             self.plots_out += 1
@@ -165,6 +165,6 @@ class RoarCompetitionSolution:
             "reverse": 0,
             "target_gear": 0
         }
-        print(f"Current waypoint idx: {self.current_waypoint_idx}, Curvature: {curvature}, Target Speed: {target_speed}, Current Speed: {vehicle_velocity_norm}, Throttle%: {throttle_normalized}")
+        print(f"Current waypoint idx: {self.current_waypoint_idx}, Curvature: {curvature}, Target Speed: {target_speed}, Current Speed: {vehicle_velocity_norm}, Throttle%: {throttle_normalized}, Brake%: {brake_normalized}")
         await self.vehicle.apply_action(control)
         return control
