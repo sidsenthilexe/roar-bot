@@ -147,8 +147,8 @@ class RoarCompetitionSolution:
         self.ax.relim()
         self.ax.autoscale_view()
 
-        self.fig.canvas.draw()
-        self.fig.canvas.flush_events()
+        if self.step_counter % 8000 == 0:
+            self.fig.savefig("live_speed_plot.png")
 
         control = {
             "throttle": throttle_normalized,
