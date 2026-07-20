@@ -121,9 +121,7 @@ class RoarCompetitionSolution:
         throttle_control = self.speed_controller.calculate(vehicle_velocity_norm)
         throttle_normalized = np.clip(throttle_control, 0.0, 1.0)
         brake_normalized = np.clip(-throttle_control, 0.0, 1.0)
-
-        throttle_normalized, brake_normalized, steer_control = MathUtil.clamp_inputs(throttle_normalized, brake_normalized, steer_control)
-
+        
         control = {
             "throttle": throttle_normalized,
             "steer": steer_control,
@@ -132,6 +130,6 @@ class RoarCompetitionSolution:
             "reverse": 0,
             "target_gear": 0
         }
-        print(f"Current waypoint idx: {self.current_waypoint_idx}, Curvature: {curvature}, Target Speed: {target_speed}, Current Speed: {vehicle_velocity_norm}, Throttle%: {throttle_control}")
+        print(f"Current waypoint idx: {self.current_waypoint_idx}, Curvature: {curvature}, Target Speed: {target_speed}, Current Speed: {vehicle_velocity_norm}, Throttle%: {throttle_normalized}")
         await self.vehicle.apply_action(control)
         return control
