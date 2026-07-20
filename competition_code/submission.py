@@ -89,8 +89,7 @@ class RoarCompetitionSolution:
         )
 
         
-        #look_ahead = SteerMap.look_ahead_dist(vehicle_velocity_norm)
-        steer_look_ahead = np.clip(int(vehicle_velocity_norm), 33, 53)
+        steer_look_ahead = SteerMap.look_ahead_dist(vehicle_velocity_norm)
 
          # We use the 3rd waypoint ahead of the current waypoint as the target waypoint
         current_waypoint = self.maneuverable_waypoints[self.current_waypoint_idx]

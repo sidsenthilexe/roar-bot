@@ -1,7 +1,10 @@
 class SpeedMap:
     
+    def get_target(x):
+        return 9.5963* (x**-0.268323)
+
     @staticmethod
-    def get_target(curvature):
+    def get_target_old(curvature):
         if (curvature < 0.00015):
             return 100
         if (curvature < 0.0003):
