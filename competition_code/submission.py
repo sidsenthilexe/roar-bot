@@ -12,6 +12,10 @@ from util.SteerMap import SteerMap
 from util.MathUtil import MathUtil
 from util.WaypointCalculator import WaypointCalculator
 from util.PIDController import PIDController
+from util.SteerController import SteerController
+
+WHEELBASE = 2.875
+MAX_TURN_RAD = 0.62
 
 def normalize_rad(rad : float):
     return (rad + np.pi) % (2 * np.pi) - np.pi
@@ -117,6 +121,8 @@ class RoarCompetitionSolution:
         current_waypoint = self.maneuverable_waypoints[self.current_waypoint_idx]
         target_waypoint = self.maneuverable_waypoints[(self.current_waypoint_idx + steer_look_ahead) % len(self.maneuverable_waypoints)]
 
+        #steer_angle = SteerController.get_target_angle(target_waypoint, vehicle_location, vehicle_rotation, WHEELBASE)
+
         spd_look_ahead = np.clip(int(vehicle_velocity_norm), 33, 53)
         
         speed_wp = [self.maneuverable_waypoints[(self.current_waypoint_idx + spd_look_ahead) % len(self.maneuverable_waypoints)], self.maneuverable_waypoints[(self.current_waypoint_idx + spd_look_ahead+20) % len(self.maneuverable_waypoints)]]
@@ -135,6 +141,8 @@ class RoarCompetitionSolution:
             -12.0 / np.sqrt(vehicle_velocity_norm) * delta_heading / np.pi
         ) if vehicle_velocity_norm > 1e-2 else -np.sign(delta_heading)
         steer_control = np.clip(steer_control, -1.0, 1.0)
+
+        #steer_control = (steer_angle/MAX_TURN_RAD)
 
         target_speed = SpeedMap.get_target(curvature)
 
