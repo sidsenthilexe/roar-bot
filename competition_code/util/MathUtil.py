@@ -19,5 +19,5 @@ class MathUtil:
         clamped_throttle = throttle * steer_scalar
         clamped_brake = brake * steer_scalar
 
-        return max(0.0, min(1.0, clamped_throttle)), max(0.0, min(1.0, clamped_brake)), steer_val
+        return max(0.0, min(1.0, clamped_throttle)), max(0.0, min(1.0, clamped_brake)), steer
 
