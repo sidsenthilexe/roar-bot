@@ -52,6 +52,10 @@ class RoarCompetitionSolution:
         # For example, you can compute the path to the first waypoint.
 
         # Receive location, rotation and velocity data 
+
+        self.maneuverable_waypoints = roar_py_interface.RoarPyWaypoint.load_waypoint_list(np.load("waypoints/waypointsPrimary.npz"))
+
+
         vehicle_location = self.location_sensor.get_last_gym_observation()
         vehicle_rotation = self.rpy_sensor.get_last_gym_observation()
         vehicle_velocity = self.velocity_sensor.get_last_gym_observation()
