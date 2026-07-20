@@ -107,7 +107,7 @@ class RoarCompetitionSolution:
 
         # Calculate delta angle towards the target waypoint
         delta_heading = normalize_rad(heading_to_waypoint - vehicle_rotation[2])
-        #
+
         # Proportional controller to steer the vehicle towards the target waypoint
         steer_control = (
             -12.0 / np.sqrt(vehicle_velocity_norm) * delta_heading / np.pi
