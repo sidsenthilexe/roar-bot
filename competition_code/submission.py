@@ -73,13 +73,14 @@ class RoarCompetitionSolution:
         self.current_speeds = []
         self.step_counter = 0
 
-        self.ax.set_ylim(20, 40)
+        self.ax.set_ylim(0, 100)
 
         self.line_target, = self.ax.plot([], [], label="Target Speed", color="r", linestyle="--")
         self.line_current, = self.ax.plot([], [], label="Current Speed", color="b")
 
         self.ax.legend(loc="upper right")
         self.ax.grid(True)
+        self.plots_out = 1
 
 
     async def step(
@@ -131,8 +132,7 @@ class RoarCompetitionSolution:
         ) if vehicle_velocity_norm > 1e-2 else -np.sign(delta_heading)
         steer_control = np.clip(steer_control, -1.0, 1.0)
 
-        target_speed = 30
-        #SpeedMap.get_target(curvature)
+        target_speed = SpeedMap.get_target(curvature)
 
 
         self.speed_controller.set_setpoint(target_speed)
@@ -150,10 +150,12 @@ class RoarCompetitionSolution:
 
         self.ax.relim()
         self.ax.autoscale_view()
-        self.ax.set_ylim(bottom=20, top=40)
+        self.ax.set_ylim(top=100)
 
         if self.step_counter % 400 == 0:
-            self.fig.savefig("live_speed_plot.png", dpi=300, bbox_inches='tight')
+            name = "plot" + str(self.plots_out)
+            self.fig.savefig(name, dpi=300, bbox_inches='tight')
+            plots_out += 1
 
         control = {
             "throttle": throttle_normalized,
