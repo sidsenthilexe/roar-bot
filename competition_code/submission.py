@@ -142,7 +142,8 @@ class RoarCompetitionSolution:
         ) if vehicle_velocity_norm > 1e-2 else -np.sign(delta_heading)
         steer_control = np.clip(steer_control, -1.0, 1.0)
 
-        #steer_control = (steer_angle/MAX_TURN_RAD)
+        #steer_control = np.clip(steer_angle/MAX_TURN_RAD, -1, 1)
+
 
         target_speed = SpeedMap.get_target(curvature)
 
