@@ -73,6 +73,8 @@ class RoarCompetitionSolution:
         self.current_speeds = []
         self.step_counter = 0
 
+        self.ax.set_ylim(0, 100)
+
         self.line_target, = self.ax.plot([], [], label="Target Speed", color="r", linestyle="--")
         self.line_current, = self.ax.plot([], [], label="Current Speed", color="b")
 
@@ -146,9 +148,10 @@ class RoarCompetitionSolution:
 
         self.ax.relim()
         self.ax.autoscale_view()
+        self.ax.set_ylim(top=100)
 
         if self.step_counter % 1500 == 0:
-            self.fig.savefig("live_speed_plot.png")
+            self.fig.savefig("live_speed_plot.png", dpi=300, bbox_inches='tight')
 
         control = {
             "throttle": throttle_normalized,
