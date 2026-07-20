@@ -131,7 +131,9 @@ class RoarCompetitionSolution:
         ) if vehicle_velocity_norm > 1e-2 else -np.sign(delta_heading)
         steer_control = np.clip(steer_control, -1.0, 1.0)
 
-        target_speed = SpeedMap.get_target(curvature)
+        target_speed = 30
+        #SpeedMap.get_target(curvature)
+
 
         self.speed_controller.set_setpoint(target_speed)
         throttle_control = self.speed_controller.calculate(vehicle_velocity_norm)
@@ -140,7 +142,6 @@ class RoarCompetitionSolution:
         
         self.step_counter += 1
         self.time_steps.append(self.step_counter)
-        target_speed = 30
         self.target_speeds.append(target_speed)
         self.current_speeds.append(vehicle_velocity_norm)
 
