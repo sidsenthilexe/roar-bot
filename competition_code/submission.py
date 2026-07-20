@@ -155,7 +155,7 @@ class RoarCompetitionSolution:
         if self.step_counter % 1000 == 0:
             name = "plot" + str(self.plots_out)
             self.fig.savefig(name, dpi=300, bbox_inches='tight')
-            plots_out += 1
+            self.plots_out += 1
 
         control = {
             "throttle": throttle_normalized,
