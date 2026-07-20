@@ -63,7 +63,7 @@ class RoarCompetitionSolution:
             self.maneuverable_waypoints
         )
 
-        self.speed_controller = PIDController(0.3, 0.0, 0.0, 0.05)
+        self.speed_controller = PIDController(0.4, 0.0, 0.0, 0.05)
 
         plt.ion()
         self.fig, self.ax = plt.subplots(figsize=(8, 4))
