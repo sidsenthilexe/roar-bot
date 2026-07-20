@@ -65,6 +65,20 @@ class RoarCompetitionSolution:
 
         self.speed_controller = PIDController(0.2, 0.0, 0.0, 0.05)
 
+        plt.ion()
+        self.fig, self.ax = plt.subplots(figsize=(8, 4))
+        
+        self.time_steps = []
+        self.target_speeds = []
+        self.current_speeds = []
+        self.step_counter = 0
+
+        self.line_target, = self.ax.plot([], [], label="Target Speed", color="r", linestyle="--")
+        self.line_current, = self.ax.plot([], [], label="Current Speed", color="b")
+
+        self.ax.legend(loc="upper right")
+        self.ax.grid(True)
+
 
     async def step(
         self
@@ -122,6 +136,20 @@ class RoarCompetitionSolution:
         throttle_normalized = np.clip(throttle_control, 0.0, 1.0)
         brake_normalized = np.clip(-throttle_control, 0.0, 1.0)
         
+        self.step_counter += 1
+        self.time_steps.append(self.step_counter)
+        self.target_speeds.append(target_speed)
+        self.current_speeds.append(vehicle_velocity_norm)
+
+        self.line_target.set_data(self.time_steps, self.target_speeds)
+        self.line_current.set_data(self.time_steps, self.current_speeds)
+
+        self.ax.relim()
+        self.ax.autoscale_view()
+
+        self.fig.canvas.draw()
+        self.fig.canvas.flush_events()
+
         control = {
             "throttle": throttle_normalized,
             "steer": steer_control,
