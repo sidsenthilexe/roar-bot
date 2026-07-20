@@ -96,28 +96,10 @@ class RoarCompetitionSolution:
         target_waypoint = self.maneuverable_waypoints[(self.current_waypoint_idx + look_ahead) % len(self.maneuverable_waypoints)]
 
         spd_look_ahead = np.clip(int(vehicle_velocity_norm), 20, 53)
-
-
         
-        speed_wp_1 = self.maneuverable_waypoints[(self.current_waypoint_idx + spd_look_ahead) % len(self.maneuverable_waypoints)]
+        speed_wp = [self.maneuverable_waypoints[(self.current_waypoint_idx + spd_look_ahead) % len(self.maneuverable_waypoints)], self.maneuverable_waypoints[(self.current_waypoint_idx + spd_look_ahead+20) % len(self.maneuverable_waypoints)]]
 
-        speed_wp_2 = self.maneuverable_waypoints[(self.current_waypoint_idx + spd_look_ahead+20) % len(self.maneuverable_waypoints)]
-
-        vector_wp_1 = WaypointCalculator.vector_to_waypoint(speed_wp_1, current_waypoint)
-        
-        vector_wp_2 = WaypointCalculator.vector_to_waypoint(speed_wp_2, speed_wp_1)
-
-        hdg_wp_1 = WaypointCalculator.hdg(vector_wp_1)
-
-        hdg_wp_2 = WaypointCalculator.hdg(vector_wp_2)
-
-        first_element_dist = WaypointCalculator.dist(speed_wp_1, current_waypoint)
-
-        second_element_dist = WaypointCalculator.dist(speed_wp_1, speed_wp_2)
-
-        heading_diff = normalize_rad(hdg_wp_2 - hdg_wp_1)
-
-        curvature = abs(heading_diff) / (first_element_dist + second_element_dist)
+        curvature = WaypointCalculator.curvature(current_waypoint, speed_wp[0], speed_wp[1])
 
         # Calculate delta vector towards the target waypoint
         vector_to_waypoint = (target_waypoint.location - vehicle_location)[:2]
