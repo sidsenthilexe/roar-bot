@@ -147,7 +147,7 @@ class RoarCompetitionSolution:
         self.ax.relim()
         self.ax.autoscale_view()
 
-        if self.step_counter % 8000 == 0:
+        if self.step_counter % 1500 == 0:
             self.fig.savefig("live_speed_plot.png")
 
         control = {
