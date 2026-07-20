@@ -15,15 +15,9 @@ class MathUtil:
     
     @staticmethod
     def clamp_inputs(throttle, brake, steer):
-        active_pedal = throttle if throttle > 0.0 else brake
+        steer_scalar = 1.0 - abs(steer)
+        clamped_throttle = throttle * steer_scalar
+        clamped_brake = brake * steer_scalar
 
-        total = abs(steer) + active_pedal
-        if total > 1.0:
-            active_pedal = 1.0-abs(steer)
-            if throttle > 0:
-                throttle = active_pedal
-            else:
-                brake = active_pedal
-
-        return throttle, brake, steer
+        return max(0.0, min(1.0, clamped_throttle)), max(0.0, min(1.0, clamped_brake)), steer_val
 
