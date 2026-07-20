@@ -11,6 +11,10 @@ from util.SpeedMap import SpeedMap
 from util.SteerMap import SteerMap
 from util.WaypointCalculator import WaypointCalculator
 from util.PIDController import PIDController
+from util.SteerController import SteerController
+
+WHEELBASE = 2.875
+MAX_TURN_RAD = 0.62
 
 def normalize_rad(rad : float):
     return (rad + np.pi) % (2 * np.pi) - np.pi
@@ -95,24 +99,16 @@ class RoarCompetitionSolution:
         current_waypoint = self.maneuverable_waypoints[self.current_waypoint_idx]
         target_waypoint = self.maneuverable_waypoints[(self.current_waypoint_idx + look_ahead) % len(self.maneuverable_waypoints)]
 
+        steer_angle = SteerController.get_target_angle(target_waypoint, vehicle_location, vehicle_rotation, WHEELBASE)
+
         spd_look_ahead = np.clip(int(vehicle_velocity_norm), 33, 53)
         
         speed_wp = [self.maneuverable_waypoints[(self.current_waypoint_idx + spd_look_ahead) % len(self.maneuverable_waypoints)], self.maneuverable_waypoints[(self.current_waypoint_idx + spd_look_ahead+20) % len(self.maneuverable_waypoints)]]
 
         curvature = WaypointCalculator.curvature(current_waypoint, speed_wp[0], speed_wp[1])
 
-        # Calculate delta vector towards the target waypoint
-        vector_to_waypoint = (target_waypoint.location - vehicle_location)[:2]
-        heading_to_waypoint = np.arctan2(vector_to_waypoint[1],vector_to_waypoint[0])
-
-        # Calculate delta angle towards the target waypoint
-        delta_heading = normalize_rad(heading_to_waypoint - vehicle_rotation[2])
-
         # Proportional controller to steer the vehicle towards the target waypoint
-        steer_control = (
-            -12.0 / np.sqrt(vehicle_velocity_norm) * delta_heading / np.pi
-        ) if vehicle_velocity_norm > 1e-2 else -np.sign(delta_heading)
-        steer_control = np.clip(steer_control, -1.0, 1.0)
+        steer_control = np.clip(steer_angle/MAX_TURN_RAD, -1, 1)
 
         target_speed = SpeedMap.get_target(curvature)
 

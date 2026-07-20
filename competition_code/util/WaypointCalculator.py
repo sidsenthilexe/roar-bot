@@ -1,10 +1,7 @@
 import numpy as np
+from util.MathUtil import MathUtil
 
 class WaypointCalculator:
-
-    @staticmethod
-    def normalize_rad(rad : float):
-        return (rad + np.pi) % (2 * np.pi) - np.pi
 
     @staticmethod
     def vector_to_waypoint(wp_1, wp_2):
@@ -26,7 +23,7 @@ class WaypointCalculator:
         hdg_wp_2 = WaypointCalculator.hdg(vector_wp_2)
         first_element_dist = WaypointCalculator.dist(wp_1, wp_0)
         second_element_dist = WaypointCalculator.dist(wp_1, wp_2)
-        heading_diff = WaypointCalculator.normalize_rad(hdg_wp_2 - hdg_wp_1)
+        heading_diff = MathUtil.normalize_rad(hdg_wp_2 - hdg_wp_1)
         curvature = abs(heading_diff) / (first_element_dist + second_element_dist)
         return curvature
 
