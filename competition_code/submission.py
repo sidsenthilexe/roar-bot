@@ -53,7 +53,7 @@ class RoarCompetitionSolution:
 
         # Receive location, rotation and velocity data 
 
-        self.maneuverable_waypoints = roar_py_interface.RoarPyWaypoint.load_waypoint_list(np.load("waypoints/oldWaypointsPrimary1.npz"))
+        self.maneuverable_waypoints = roar_py_interface.RoarPyWaypoint.load_waypoint_list(np.load("waypoints/oldWaypointsPrimary2.npz"))
 
 
         vehicle_location = self.location_sensor.get_last_gym_observation()
