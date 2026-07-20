@@ -152,7 +152,7 @@ class RoarCompetitionSolution:
         self.ax.autoscale_view()
         self.ax.set_ylim(top=100)
 
-        if self.step_counter % 400 == 0:
+        if self.step_counter % 1000 == 0:
             name = "plot" + str(self.plots_out)
             self.fig.savefig(name, dpi=300, bbox_inches='tight')
             plots_out += 1
