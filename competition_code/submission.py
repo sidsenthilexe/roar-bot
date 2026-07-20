@@ -66,19 +66,34 @@ class RoarCompetitionSolution:
         self.speed_controller = PIDController(1.0, 0.1, 0.1, 0.05)
 
         plt.ion()
-        self.fig, self.ax = plt.subplots(figsize=(8, 4))
-        
+        self.fig, self.ax = plt.subplots(figsize=(8, 4), dpi=200)
+
         self.time_steps = []
         self.target_speeds = []
         self.current_speeds = []
+        self.throttles = []
+        self.brakes = []
         self.step_counter = 0
 
+        self.ax_pedals = self.ax.twinx()
+
+        self.line_target, = self.ax.plot([], [], label="Target Speed", color="r", linestyle="--", linewidth=1.5)
+        self.line_current, = self.ax.plot([], [], label="Current Speed", color="b", linewidth=1.5)
+
+        self.ax.set_xlabel("Steps")
+        self.ax.set_ylabel("Speed", color="b")
         self.ax.set_ylim(0, 100)
 
-        self.line_target, = self.ax.plot([], [], label="Target Speed", color="r", linestyle="--")
-        self.line_current, = self.ax.plot([], [], label="Current Speed", color="b")
+        self.line_throttle, = self.ax_pedals.plot([], [], label="Throttle", color="g", linewidth=0.8)
+        self.line_brake, = self.ax_pedals.plot([], [], label="Brake", color="r", linewidth=0.8)
 
-        self.ax.legend(loc="upper right")
+        self.ax_pedals.set_ylabel("Pedals", color="g")
+        self.ax_pedals.set_ylim(0, 1)
+
+        lines = [self.line_target, self.line_current, self.line_throttle, self.line_brake]
+        labels = [line.get_label() for line in lines]
+        self.ax.legend(lines, labels, loc="upper right")
+
         self.ax.grid(True)
         self.plots_out = 1
 
@@ -144,13 +159,19 @@ class RoarCompetitionSolution:
         self.time_steps.append(self.step_counter)
         self.target_speeds.append(target_speed)
         self.current_speeds.append(vehicle_velocity_norm)
+        self.throttles.append(throttle_normalized)
+        self.brakes.append(brake_normalized)
 
         self.line_target.set_data(self.time_steps, self.target_speeds)
         self.line_current.set_data(self.time_steps, self.current_speeds)
 
+        self.line_throttle.set_data(self.time_steps, self.throttles)
+        self.line_brake.set_data(self.time_steps, self.brakes)
+
         self.ax.relim()
-        self.ax.autoscale_view()
+        self.ax.autoscale_view(scaley=False)
         self.ax.set_ylim(top=100)
+        self.ax_pedals.set_ylim(0, 1)
 
         if self.step_counter % 2769 == 0:
             name = "plot" + str(self.plots_out)
