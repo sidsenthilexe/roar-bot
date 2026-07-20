@@ -63,7 +63,7 @@ class RoarCompetitionSolution:
             self.maneuverable_waypoints
         )
 
-        self.speed_controller = PIDController(1.0, 0.1, 0.0, 0.05)
+        self.speed_controller = PIDController(0.5, 0.2, 0.1, 0.05)
 
         plt.ion()
         self.fig, self.ax = plt.subplots(figsize=(8, 4))
@@ -73,7 +73,7 @@ class RoarCompetitionSolution:
         self.current_speeds = []
         self.step_counter = 0
 
-        self.ax.set_ylim(0, 100)
+        self.ax.set_ylim(20, 40)
 
         self.line_target, = self.ax.plot([], [], label="Target Speed", color="r", linestyle="--")
         self.line_current, = self.ax.plot([], [], label="Current Speed", color="b")
@@ -150,7 +150,7 @@ class RoarCompetitionSolution:
 
         self.ax.relim()
         self.ax.autoscale_view()
-        self.ax.set_ylim(top=100)
+        self.ax.set_ylim(bottom=20, top=40)
 
         if self.step_counter % 400 == 0:
             self.fig.savefig("live_speed_plot.png", dpi=300, bbox_inches='tight')
