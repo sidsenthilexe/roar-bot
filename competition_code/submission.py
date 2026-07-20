@@ -140,6 +140,7 @@ class RoarCompetitionSolution:
         
         self.step_counter += 1
         self.time_steps.append(self.step_counter)
+        target_speed = 30
         self.target_speeds.append(target_speed)
         self.current_speeds.append(vehicle_velocity_norm)
 
@@ -150,7 +151,7 @@ class RoarCompetitionSolution:
         self.ax.autoscale_view()
         self.ax.set_ylim(top=100)
 
-        if self.step_counter % 1500 == 0:
+        if self.step_counter % 400 == 0:
             self.fig.savefig("live_speed_plot.png", dpi=300, bbox_inches='tight')
 
         control = {
