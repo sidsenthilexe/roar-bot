@@ -12,4 +12,18 @@ class MathUtil:
         input -= num_min * modulus
 
         return input
+    
+    @staticmethod
+    def clamp_inputs(throttle, brake, steer):
+        active_pedal = throttle if throttle > 0.0 else brake
+
+        total = abs(steer) + active_pedal
+        if total > 1.0:
+            active_pedal = 1.0-abs(steer)
+            if throttle > 0:
+                throttle = active_pedal
+            else:
+                brake = active_pedal
+
+        return throttle, brake, steer
 

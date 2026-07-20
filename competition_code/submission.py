@@ -9,6 +9,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 from util.SpeedMap import SpeedMap
 from util.SteerMap import SteerMap
+from util.MathUtil import MathUtil
 from util.WaypointCalculator import WaypointCalculator
 from util.PIDController import PIDController
 
@@ -118,11 +119,15 @@ class RoarCompetitionSolution:
 
         self.speed_controller.set_setpoint(target_speed)
         throttle_control = self.speed_controller.calculate(vehicle_velocity_norm)
+        throttle_normalized = np.clip(throttle_control, 0.0, 1.0)
+        brake_normalized = np.clip(-throttle_control, 0.0, 1.0)
+
+        throttle_normalized, brake_normalized, steer_control = MathUtil.clamp_inputs(throttle_normalized, brake_normalized, steer_control)
 
         control = {
-            "throttle": np.clip(throttle_control, 0.0, 1.0),
+            "throttle": throttle_normalized,
             "steer": steer_control,
-            "brake": np.clip(-throttle_control, 0.0, 1.0),
+            "brake": brake_normalized,
             "hand_brake": 0.0,
             "reverse": 0,
             "target_gear": 0
