@@ -7,9 +7,11 @@ class SteerController:
     def get_target_angle(target, car_loc, car_rot, wheelbase):
         dx = target.location[0] - car_loc[0]
         dy = target.location[1] - car_loc[1]
-        actual_look_ahead = max(1.0, np.hypot(dx, dy))
+        actual_look_ahead = max(1e-6, np.hypot(dx, dy))
         angle_diff = MathUtil.normalize_rad(np.arctan2(dy, dx) - car_rot[2])
-        steer_angle = np.arctan(2 * wheelbase * np.sin(angle_diff) / actual_look_ahead)
+        curvature = 2 * np.sin(angle_diff) / actual_look_ahead
+        curvature_clip = np.clip(curvature, -0.25, 0.25)
+        steer_angle = np.arctan(wheelbase * curvature_clip)
         return -steer_angle
 
 

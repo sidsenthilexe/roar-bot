@@ -144,7 +144,6 @@ class RoarCompetitionSolution:
 
         #steer_control = np.clip(steer_angle/MAX_TURN_RAD, -1, 1)
 
-
         target_speed = SpeedMap.get_target(curvature)
 
 

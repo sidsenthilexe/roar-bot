@@ -1,4 +1,10 @@
+import numpy as np
+
 class MathUtil:
+
+    @staticmethod
+    def normalize_rad(rad : float):
+        return (rad + np.pi) % (2 * np.pi) - np.pi
 
     @staticmethod
     def input_modulus(input, min_input, max_input):
