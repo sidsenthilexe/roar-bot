@@ -113,10 +113,8 @@ class RoarCompetitionSolution:
 
         center = vehicle_location[:2]
 
-        edge_l = center + left_vector * self.vehicle._wrapped.bounding_box.extent[1]
-        edge_r = center - left_vector * self.vehicle._wrapped.bounding_box.extent[1]
-        edge_f = center + forward_vector * self.vehicle._wrapped.bounding_box.extent[0]
-
+        print(f"Width: {self.vehicle._wrapped.bounding_box.extent[1]}")
+        print(f"Length: {self.vehicle._wrapped.bounding_box.extent[0]}")
         #
         look_ahead = SteerMap.look_ahead_dist(vehicle_velocity_norm)
 
