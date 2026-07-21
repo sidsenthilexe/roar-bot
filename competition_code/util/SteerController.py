@@ -4,8 +4,7 @@ from util.MathUtil import MathUtil
 class SteerController:
 
     @staticmethod
-    def get_target_angle(target, car_loc, car_rot, vehicle):
-        wheelbase = SteerController.get_vehicle_wheelbase(vehicle)
+    def get_target_angle(target, car_loc, car_rot, wheelbase):
         dx = target.location[0] - car_loc[0]
         dy = target.location[1] - car_loc[1]
         actual_look_ahead = max(1e-6, np.hypot(dx, dy))
@@ -14,9 +13,3 @@ class SteerController:
         steer_angle = np.arctan(wheelbase * curvature)
         return -steer_angle
 
-    @staticmethod
-    def get_vehicle_wheelbase(vehicle):
-        wheels = vehicle.get_physics_control().wheels
-        front = (wheels[0].position.x + wheels[1].position.x) / 200
-        back = (wheels[2].position.x + wheels[3].position.x) / 200
-        return abs(front - back)

@@ -121,7 +121,7 @@ class RoarCompetitionSolution:
         current_waypoint = self.maneuverable_waypoints[self.current_waypoint_idx]
         target_waypoint = self.maneuverable_waypoints[(self.current_waypoint_idx + steer_look_ahead) % len(self.maneuverable_waypoints)]
 
-        steer_angle = SteerController.get_target_angle(target_waypoint, vehicle_location, vehicle_rotation, self.vehicle)
+        steer_angle = SteerController.get_target_angle(target_waypoint, vehicle_location, vehicle_rotation, WHEELBASE)
 
         spd_look_ahead = np.clip(int(vehicle_velocity_norm), 33, 53)
         
