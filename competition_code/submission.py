@@ -167,7 +167,7 @@ class RoarCompetitionSolution:
             self.plots_out += 1
 
         # target_handbrake = 0.0
-        if (brake_normalized == 1.0 and steer_control == 1.0):
+        if (brake_normalized == 1.0 and steer_control < 0.01):
             target_handbrake = 1.0
         else:
             target_handbrake = 0.0
