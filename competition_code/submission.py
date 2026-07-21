@@ -169,7 +169,7 @@ class RoarCompetitionSolution:
         if (brake_normalized == 1.0 and steer_control == 1.0):
             target_handbrake = 1.0
         else:
-            target_handbarke = 0.0
+            target_handbrake = 0.0
 
         control = {
             "throttle": throttle_normalized,
