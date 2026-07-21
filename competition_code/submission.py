@@ -166,11 +166,11 @@ class RoarCompetitionSolution:
             self.fig.savefig(name, dpi=300, bbox_inches='tight')
             self.plots_out += 1
 
-        target_handbrake = 0.0
-        # if (brake_normalized == 1.0 and steer_control == 1.0):
-        #     target_handbrake = 1.0
-        # else:
-        #     target_handbrake = 0.0
+        # target_handbrake = 0.0
+        if (brake_normalized == 1.0 and steer_control == 1.0):
+            target_handbrake = 1.0
+        else:
+            target_handbrake = 0.0
 
         control = {
             "throttle": throttle_normalized,
