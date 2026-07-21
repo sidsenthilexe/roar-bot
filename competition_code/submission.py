@@ -130,19 +130,17 @@ class RoarCompetitionSolution:
         curvature = WaypointCalculator.curvature(current_waypoint, speed_wp[0], speed_wp[1])
 
         # Calculate delta vector towards the target waypoint
-        #vector_to_waypoint = (target_waypoint.location - vehicle_location)[:2]
-        #heading_to_waypoint = np.arctan2(vector_to_waypoint[1],vector_to_waypoint[0])
+        vector_to_waypoint = (target_waypoint.location - vehicle_location)[:2]
+        heading_to_waypoint = np.arctan2(vector_to_waypoint[1],vector_to_waypoint[0])
 
         # Calculate delta angle towards the target waypoint
-        #delta_heading = normalize_rad(heading_to_waypoint - vehicle_rotation[2])
+        delta_heading = normalize_rad(heading_to_waypoint - vehicle_rotation[2])
 
         # Proportional controller to steer the vehicle towards the target waypoint
-        #steer_control = (
-        #    -12.0 / np.sqrt(vehicle_velocity_norm) * delta_heading / np.pi
-        #) if vehicle_velocity_norm > 1e-2 else -np.sign(delta_heading)
-        #steer_control = np.clip(steer_control, -1.0, 1.0)
-
-        steer_control = np.clip(steer_angle/MAX_TURN_RAD, -1.0, 1.0)
+        steer_control = (
+           -12.0 / np.sqrt(vehicle_velocity_norm) * delta_heading / np.pi
+        ) if vehicle_velocity_norm > 1e-2 else -np.sign(delta_heading)
+        steer_control = np.clip(steer_control, -1.0, 1.0)
 
         target_speed = SpeedMap.get_target(curvature)
 
