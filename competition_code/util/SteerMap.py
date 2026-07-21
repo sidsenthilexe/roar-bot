@@ -4,7 +4,7 @@ class SteerMap:
 
     @staticmethod
     def look_ahead_dist(v):
-        return np.clip(0.4 * v - 2, 6, 25)
+        return int(np.clip(0.4 * v - 2, 6, 25))
 
     @staticmethod
     def look_ahead_dist2(v):
