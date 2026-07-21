@@ -4,7 +4,7 @@ class SpeedMap:
     
     @staticmethod
     def get_target(x):
-        return np.clip(7.62945* ((x*0.75)**-0.300321), 0.0, 100.0)
+        return np.clip(7.62945* ((x)**-0.300321), 0.0, 100.0)
 
     # @staticmethod
     # def get_target_old(curvature):
