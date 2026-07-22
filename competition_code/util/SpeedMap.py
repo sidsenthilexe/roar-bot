@@ -5,6 +5,11 @@ class SpeedMap:
     @staticmethod
     def get_target(x):
         return np.clip(7.62945* ((x)**-0.300321), 0.0, 100.0)
+    
+    @staticmethod
+    def get_max_throttle(c):
+        max_throttle = np.exp(-25.0 * abs(c))
+        return np.clip(max_throttle, 0.75, 1.0)
 
     # @staticmethod
     # def get_target_old(curvature):

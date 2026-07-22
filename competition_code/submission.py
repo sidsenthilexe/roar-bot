@@ -15,7 +15,7 @@ from util.PIDController import PIDController
 from util.SteerController import SteerController
 
 WHEELBASE = 2.875
-MAX_TURN_RAD = 0.62
+MAX_TURN_RAD = 0.55
 
 def normalize_rad(rad : float):
     return (rad + np.pi) % (2 * np.pi) - np.pi
@@ -57,7 +57,7 @@ class RoarCompetitionSolution:
 
         # Receive location, rotation and velocity data 
 
-        self.maneuverable_waypoints = roar_py_interface.RoarPyWaypoint.load_waypoint_list(np.load("waypoints/edited_waypointsPrimary.npz"))
+        self.maneuverable_waypoints = roar_py_interface.RoarPyWaypoint.load_waypoint_list(np.load("waypoints/waypointsPrimary.npz"))
 
 
         vehicle_location = self.location_sensor.get_last_gym_observation()
@@ -121,13 +121,16 @@ class RoarCompetitionSolution:
         current_waypoint = self.maneuverable_waypoints[self.current_waypoint_idx]
         target_waypoint = self.maneuverable_waypoints[(self.current_waypoint_idx + steer_look_ahead) % len(self.maneuverable_waypoints)]
 
-        steer_angle = SteerController.get_target_angle(target_waypoint, vehicle_location, vehicle_rotation, WHEELBASE)
+        #steer_angle = SteerController.get_target_angle(target_waypoint, vehicle_location, vehicle_rotation, WHEELBASE)
 
         spd_look_ahead = np.clip(int(vehicle_velocity_norm), 33, 53)
         
         speed_wp = [self.maneuverable_waypoints[(self.current_waypoint_idx + spd_look_ahead) % len(self.maneuverable_waypoints)], self.maneuverable_waypoints[(self.current_waypoint_idx + spd_look_ahead+20) % len(self.maneuverable_waypoints)]]
 
+        speed_wp_2 = [self.maneuverable_waypoints[(self.current_waypoint_idx + 10) % len(self.maneuverable_waypoints)], self.maneuverable_waypoints[(self.current_waypoint_idx + 20) % len(self.maneuverable_waypoints)]]
+
         curvature = WaypointCalculator.curvature(current_waypoint, speed_wp[0], speed_wp[1])
+        curvature_near = WaypointCalculator.curvature(current_waypoint, speed_wp_2[0], speed_wp_2[1])
 
         # Calculate delta vector towards the target waypoint
         vector_to_waypoint = (target_waypoint.location - vehicle_location)[:2]
@@ -136,11 +139,14 @@ class RoarCompetitionSolution:
         # Calculate delta angle towards the target waypoint
         delta_heading = normalize_rad(heading_to_waypoint - vehicle_rotation[2])
 
+        gain = 12 + 0.05 * vehicle_velocity_norm
+
         # Proportional controller to steer the vehicle towards the target waypoint
         steer_control = (
-           -12.0 / np.sqrt(vehicle_velocity_norm) * delta_heading / np.pi
+           -gain / (vehicle_velocity_norm ** 0.4) * delta_heading / np.pi
         ) if vehicle_velocity_norm > 1e-2 else -np.sign(delta_heading)
         steer_control = np.clip(steer_control, -1.0, 1.0)
+        #steer_control = np.clip(steer_angle/MAX_TURN_RAD, -1.0, 1.0)
 
         target_speed = SpeedMap.get_target(curvature)
 
@@ -166,20 +172,15 @@ class RoarCompetitionSolution:
             self.fig.savefig(name, dpi=300, bbox_inches='tight')
             self.plots_out += 1
 
-        # target_handbrake = 0.0
-        if (brake_normalized == 1.0 and steer_control == 0.0):
-            target_handbrake = 1.0
-        else:
-            target_handbrake = 0.0
-
         control = {
             "throttle": throttle_normalized,
             "steer": steer_control,
             "brake": brake_normalized,
-            "hand_brake": target_handbrake,
+            "hand_brake": 0,
             "reverse": 0,
             "target_gear": 0
         }
-        print(f"Current waypoint idx: {self.current_waypoint_idx}, Curvature: {curvature}, Target Speed: {target_speed}, Current Speed: {vehicle_velocity_norm}, Throttle%: {throttle_normalized}, Brake%: {brake_normalized}")
+        #print(f"Current waypoint idx: {self.current_waypoint_idx}, Curvature: {curvature}, Target Speed: {target_speed}, Current Speed: {vehicle_velocity_norm}, Throttle%: {throttle_normalized}, Brake%: {brake_normalized}")
+        print(f"Throttle: {throttle_normalized}, Target Speed: {target_speed}, Current Speed: {vehicle_velocity_norm}, Steer Control: {steer_control}")
         await self.vehicle.apply_action(control)
         return control

@@ -1,23 +1,13 @@
-import numpy as np
-
 class SteerMap:
 
-    # @staticmethod
-    # def look_ahead_dist(v):
-    #     return int(np.clip(0.4 * v - 2, 6, 25))
-
     @staticmethod
-    def look_ahead_dist(v):
-        if (v < 20):
+    def look_ahead_dist(velocity):
+        if (velocity < 20):
             return 6
-        elif (v < 35):
+        elif (velocity < 35):
             return 12
-        elif (v < 50):
+        elif (velocity < 50):
             return 18
         else:
             return 25
-
-    #@staticmethod
-    #def look_ahead_dist(v):
-    #    return np.clip(int(0.1 * v + 2), 4, 20)
-    
+        
