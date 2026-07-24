@@ -8,22 +8,18 @@ import os
 # ==========================================
 CAR_WIDTH = 2.1634500027          # Width of the car in meters
 CAR_LENGTH = 4.7917795181         # Length of the car in meters
-WALL_MARGIN = 1.0                 # Extra distance from track walls on straights/regular corners
-CORNER_MARGIN_BOOST = 5.0         # EXTRA margin added dynamically ONLY on chicanes
-CHICANE_SMOOTHING_WINDOW = 12      # Number of waypoints to bleed the chicane margin forward/backward
-MIN_WAYPOINT_DIST = 0.7           # Minimum allowed distance between consecutive waypoints in meters
+WALL_MARGIN = 2.0                 # Minimum distance to keep from track walls
+MIN_WAYPOINT_DIST = 2.0           # Minimum allowed distance between consecutive waypoints in meters
 # ==========================================
 
 class TrackEditor:
-    def __init__(self, reference_filepath, target_filepath, car_width=CAR_WIDTH, car_length=CAR_LENGTH, wall_margin=WALL_MARGIN, corner_margin_boost=CORNER_MARGIN_BOOST, chicane_window=CHICANE_SMOOTHING_WINDOW, min_dist=MIN_WAYPOINT_DIST):
+    def __init__(self, reference_filepath, target_filepath, car_width=CAR_WIDTH, car_length=CAR_LENGTH, wall_margin=WALL_MARGIN, min_dist=MIN_WAYPOINT_DIST):
         self.ref_filepath = reference_filepath
         self.target_filepath = target_filepath
         self.filename = os.path.basename(target_filepath)
         self.car_width = car_width
         self.car_length = car_length
         self.wall_margin = wall_margin
-        self.corner_margin_boost = corner_margin_boost
-        self.chicane_window = chicane_window
         self.min_dist = min_dist
         
         self.edit_mode = 'inner'
@@ -362,85 +358,80 @@ class TrackEditor:
             self.car_boxes.set_visible(self.show_car_boxes)
             self._refresh_visuals()
         elif event.key == 'o':
-            self.optimize_racing_line(fix_endpoints=False)
+            # Standard optimization (open loop)
+            self.optimize_racing_line(fix_endpoints=False, closed_loop=False)
         elif event.key == 'p':
-            self.optimize_racing_line(fix_endpoints=True)
+            # Closed loop optimization (smooth connection at start/end)
+            self.optimize_racing_line(fix_endpoints=False, closed_loop=True)
 
-    def optimize_racing_line(self, iterations=100, alpha=0.6, fix_endpoints=False):
+    def optimize_racing_line(self, iterations=300, alpha=0.2, fix_endpoints=False, closed_loop=False):
         """
-        Geometrically optimizes the racing line.
-        Applies extra margin STRICTLY on chicanes (where turn directions rapidly switch).
+        Geometrically optimizes the racing line using iterative Minimum Curvature.
+        Ensures waypoints maintain at least self.wall_margin distance from track walls.
         """
-        mode_msg = "locking endpoints" if fix_endpoints else "including endpoints"
-        print(f"Optimizing racing line ({mode_msg})...")
+        mode_msg = "closed loop" if closed_loop else ("locking endpoints" if fix_endpoints else "including endpoints")
+        print(f"Optimizing racing line for minimum curvature ({mode_msg})...")
         
         self.undo_stack.append((self.x.copy(), self.y.copy()))
         if len(self.undo_stack) > 50:
             self.undo_stack.pop(0)
 
+        # Precompute reference track normal vectors for wall margin checking
+        ref_dx = np.gradient(self.ref_x)
+        ref_dy = np.gradient(self.ref_y)
+        ref_mags = np.hypot(ref_dx, ref_dy)
+        ref_mags[ref_mags == 0] = 1e-6
+        ref_nx = -ref_dy / ref_mags
+        ref_ny = ref_dx / ref_mags
+
         new_x = self.x.copy()
         new_y = self.y.copy()
 
-        start_idx = 1 if fix_endpoints else 0
-        end_idx = len(self.x) - 1 if fix_endpoints else len(self.x)
+        start_idx = 1 if fix_endpoints and not closed_loop else 0
+        end_idx = len(self.x) - 1 if fix_endpoints and not closed_loop else len(self.x)
+        num_pts = len(self.x)
 
         for _ in range(iterations):
             temp_x = new_x.copy()
             temp_y = new_y.copy()
             
-            # 1. Calculate signed curvature to distinguish left vs right turns
-            dx = np.gradient(temp_x)
-            dy = np.gradient(temp_y)
-            ddx = np.gradient(dx)
-            ddy = np.gradient(dy)
-            
-            speed_sq = dx**2 + dy**2
-            signed_curvature = (dx * ddy - dy * ddx) / (speed_sq**1.5 + 1e-6)
-            
-            # 2. Detect Chicane Points (rapid directional transitions)
-            # Derivative of signed curvature highlights points where left turns swing into right turns
-            d_curvature = np.abs(np.gradient(signed_curvature))
-            
-            # A high d_curvature AND high overall bending indicates an S-bend (chicane)
-            raw_chicane_intensity = np.clip(d_curvature / 0.05, 0.0, 1.0) * np.clip(np.abs(signed_curvature) / 0.05, 0.0, 1.0)
-            
-            # 3. Apply a dilation window (max filter) to bridge the chicane zone smoothly
-            chicane_intensity = np.copy(raw_chicane_intensity)
-            window = self.chicane_window
-            for j in range(len(raw_chicane_intensity)):
-                start = max(0, j - window)
-                end = min(len(raw_chicane_intensity), j + window + 1)
-                chicane_intensity[j] = np.max(raw_chicane_intensity[start:end])
-            
-            # 4. Optimize path
             for i in range(start_idx, end_idx):
-                prev_i = max(0, i - 1)
-                next_i = min(len(self.x) - 1, i + 1)
+                if closed_loop:
+                    prev2_i = (i - 2) % num_pts
+                    prev_i  = (i - 1) % num_pts
+                    next_i  = (i + 1) % num_pts
+                    next2_i = (i + 2) % num_pts
+                else:
+                    prev2_i = max(0, i - 2)
+                    prev_i  = max(0, i - 1)
+                    next_i  = min(num_pts - 1, i + 1)
+                    next2_i = min(num_pts - 1, i + 2)
                 
-                target_x = (temp_x[prev_i] + temp_x[next_i]) / 2.0
-                target_y = (temp_y[prev_i] + temp_y[next_i]) / 2.0
+                # Minimum curvature theoretical relaxation target
+                target_x = (-temp_x[prev2_i] + 4 * temp_x[prev_i] + 4 * temp_x[next_i] - temp_x[next2_i]) / 6.0
+                target_y = (-temp_y[prev2_i] + 4 * temp_y[prev_i] + 4 * temp_y[next_i] - temp_y[next2_i]) / 6.0
 
-                new_x[i] = temp_x[i] + alpha * (target_x - temp_x[i])
-                new_y[i] = temp_y[i] + alpha * (target_y - temp_y[i])
+                cand_x = temp_x[i] + alpha * (target_x - temp_x[i])
+                cand_y = temp_y[i] + alpha * (target_y - temp_y[i])
 
-                dists = np.hypot(self.ref_x - new_x[i], self.ref_y - new_y[i])
+                # Find closest point on reference line
+                dists = np.hypot(self.ref_x - cand_x, self.ref_y - cand_y)
                 closest_idx = np.argmin(dists)
 
-                # DYNAMIC MARGIN CALCULATION: Apply boost purely based on chicane intensity
-                dynamic_margin = self.wall_margin + (self.corner_margin_boost * chicane_intensity[i])
+                # Compute maximum allowed displacement from centerline to satisfy wall margin
+                max_disp = (self.ref_widths[closest_idx] / 2.0) - self.wall_margin
+                max_disp = max(0.0, max_disp)
 
-                max_dist = (self.ref_widths[closest_idx] / 2.0) - (self.car_width / 2.0) - dynamic_margin
-                max_dist = max(0.0, max_dist)
+                # Project candidate point onto reference track normal at closest_idx
+                vec_x = cand_x - self.ref_x[closest_idx]
+                vec_y = cand_y - self.ref_y[closest_idx]
+                disp = vec_x * ref_nx[closest_idx] + vec_y * ref_ny[closest_idx]
 
-                vec_x = new_x[i] - self.ref_x[closest_idx]
-                vec_y = new_y[i] - self.ref_y[closest_idx]
-                dist_from_center = np.hypot(vec_x, vec_y)
+                # Clamp displacement within allowable track wall bounds
+                clamped_disp = np.clip(disp, -max_disp, max_disp)
 
-                if dist_from_center > max_dist:
-                    vec_x /= dist_from_center
-                    vec_y /= dist_from_center
-                    new_x[i] = self.ref_x[closest_idx] + vec_x * max_dist
-                    new_y[i] = self.ref_y[closest_idx] + vec_y * max_dist
+                new_x[i] = self.ref_x[closest_idx] + clamped_disp * ref_nx[closest_idx]
+                new_y[i] = self.ref_y[closest_idx] + clamped_disp * ref_ny[closest_idx]
 
         self.x = new_x
         self.y = new_y
@@ -512,7 +503,7 @@ if __name__ == "__main__":
     if os.path.exists(REFERENCE_TRACK) and os.path.exists(EDITABLE_PATH):
         print(f"Loading {REFERENCE_TRACK} as boundaries...")
         print(f"Loading {EDITABLE_PATH} as editable racing line...")
-        editor = TrackEditor(REFERENCE_TRACK, EDITABLE_PATH, car_width=CAR_WIDTH, car_length=CAR_LENGTH, wall_margin=WALL_MARGIN, corner_margin_boost=CORNER_MARGIN_BOOST, chicane_window=CHICANE_SMOOTHING_WINDOW)
+        editor = TrackEditor(REFERENCE_TRACK, EDITABLE_PATH, car_width=CAR_WIDTH, car_length=CAR_LENGTH, wall_margin=WALL_MARGIN)
         plt.show()
     else:
         print("Error: Could not find one or both of the required .npz files.")

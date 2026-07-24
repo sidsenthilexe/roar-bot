@@ -1,15 +1,16 @@
 import numpy as np
+from util.WaypointCalculator import WaypointCalculator
 
 class SpeedMap:
     
     @staticmethod
-    def get_target(x):
-        return np.clip(7.62945* ((x)**-0.300321), 0.0, 100.0)
-    
-    @staticmethod
-    def get_max_throttle(c):
-        max_throttle = np.exp(-25.0 * abs(c))
-        return np.clip(max_throttle, 0.75, 1.0)
+    def get_target_speed(velocity, vehicle):
+        current_waypoint = vehicle.maneuverable_waypoints[vehicle.current_waypoint_idx]
+        spd_look_ahead = np.clip(int(velocity), 33, 53)
+        speed_wp = [vehicle.maneuverable_waypoints[(vehicle.current_waypoint_idx + spd_look_ahead) % len(vehicle.maneuverable_waypoints)], vehicle.maneuverable_waypoints[(vehicle.current_waypoint_idx + spd_look_ahead+20) % len(vehicle.maneuverable_waypoints)]]
+        curvature = WaypointCalculator.curvature(current_waypoint, speed_wp[0], speed_wp[1])
+        return np.clip(7.62945* ((curvature)**-0.300321), 0.0, 100.0)
+
 
     # @staticmethod
     # def get_target_old(curvature):
