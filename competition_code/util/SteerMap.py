@@ -3,7 +3,7 @@ class SteerMap:
 
     @staticmethod
     def look_ahead_dist(velocity):
-        return np.clip(0.6 * velocity - 3.0, 6.0, 25.0)
+        return int(np.clip(0.6 * velocity - 3.0, 6.0, 25.0))
 
         if (velocity < 20):
             return 6
