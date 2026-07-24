@@ -55,7 +55,7 @@ class RoarCompetitionSolution:
         )
 
         self.speed_controller = PIDController(0.9, 0.1, 0.1, 0.05)
-        self.steer_controller = PIDController(0.5, 0.0, 0.1, 0.05)
+        self.steer_controller = PIDController(1.0, 0.0, 0.0, 0.05)
 
     async def step(
         self
