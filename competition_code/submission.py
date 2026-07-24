@@ -55,6 +55,7 @@ class RoarCompetitionSolution:
         )
 
         self.speed_controller = PIDController(0.9, 0.1, 0.1, 0.05)
+        self.steer_controller = PIDController(0.5, 0.0, 0.1, 0.05)
 
     async def step(
         self
@@ -70,7 +71,6 @@ class RoarCompetitionSolution:
             self.maneuverable_waypoints
         ) 
 
-        steer_control = SteerController.get_steer_control(vehicle_velocity_norm, self, vehicle_location, vehicle_rotation)
 
         target_speed = SpeedMap.get_target_speed(vehicle_velocity_norm, self)
 
@@ -79,11 +79,18 @@ class RoarCompetitionSolution:
         throttle_normalized = np.clip(throttle_control, 0.0, 1.0)
         brake_normalized = np.clip(-throttle_control, 0.0, 1.0)
 
-        throttle_normalized, brake_normalized, steer_control = MathUtil.clamp_inputs(throttle_normalized, brake_normalized, steer_control)
+        target_steer = SteerController.get_target_heading(vehicle_velocity_norm, self, vehicle_location, vehicle_rotation)
+
+
+        self.steer_controller.set_setpoint(target_steer)
+        steer_control = self.steer_controller.calculate(vehicle_rotation)
+        steer_normalized = np.clip(steer_control, -1.0, 1.0)
+
+        #throttle_normalized, brake_normalized, steer_control = MathUtil.clamp_inputs(throttle_normalized, brake_normalized, steer_control)
 
         control = {
             "throttle": throttle_normalized,
-            "steer": steer_control,
+            "steer": steer_normalized,
             "brake": brake_normalized,
             "hand_brake": 0,
             "reverse": 0,
