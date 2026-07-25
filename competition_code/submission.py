@@ -43,7 +43,7 @@ class RoarCompetitionSolution:
         self.collision_sensor = collision_sensor
     
     async def initialize(self) -> None:
-        self.maneuverable_waypoints = roar_py_interface.RoarPyWaypoint.load_waypoint_list(np.load("waypoints/output_waypointsPrimary1.npz"))
+        self.maneuverable_waypoints = roar_py_interface.RoarPyWaypoint.load_waypoint_list(np.load("waypoints/edited_waypointsPrimary.npz"))
 
         vehicle_location = self.location_sensor.get_last_gym_observation()
 
@@ -71,7 +71,6 @@ class RoarCompetitionSolution:
             self.maneuverable_waypoints
         ) 
 
-
         target_speed = SpeedMap.get_target_speed(vehicle_velocity_norm, self)
 
         self.speed_controller.set_setpoint(target_speed)
@@ -95,6 +94,6 @@ class RoarCompetitionSolution:
             "reverse": 0,
             "target_gear": 0
         }
-        print(f"Throttle: {throttle_normalized}, Target Speed: {target_speed}, Current Speed: {vehicle_velocity_norm}, Steer Control: {steer_control}, Target Heading: {target_steer}, Vehicle Heading: {vehicle_rotation[2]}")
+        print(f"Current Waypoint Idx: {self.current_waypoint_idx}, Velocity: {vehicle_velocity_norm}")
         await self.vehicle.apply_action(control)
         return control
