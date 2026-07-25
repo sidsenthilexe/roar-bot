@@ -14,7 +14,7 @@ class MathUtil:
         while diff > np.pi:
             adjusted_target -= 2 * np.pi
             diff = adjusted_target - current_heading
-        while diff < np.pi:
+        while diff < -np.pi:
             adjusted_target += 2 * np.pi
             diff = adjusted_target - current_heading
 
