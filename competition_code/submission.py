@@ -79,11 +79,10 @@ class RoarCompetitionSolution:
         throttle_normalized = np.clip(throttle_control, 0.0, 1.0)
         brake_normalized = np.clip(-throttle_control, 0.0, 1.0)
 
-        target_steer = SteerController.get_target_heading(vehicle_velocity_norm, self, vehicle_location, vehicle_rotation)
-
-
+        target_steer = MathUtil.normalize_continuous_target_rads(vehicle_rotation[2], SteerController.get_target_heading(vehicle_velocity_norm, self, vehicle_location, vehicle_rotation))
+        
+        steer_control = self.steer_controller.calculate(vehicle_rotation[2])
         self.steer_controller.set_setpoint(target_steer)
-        steer_control = self.steer_controller.calculate(MathUtil.normalize_rad(vehicle_rotation[2]))
         steer_normalized = np.clip(-steer_control, -1.0, 1.0)
 
         #throttle_normalized, brake_normalized, steer_control = MathUtil.clamp_inputs(throttle_normalized, brake_normalized, steer_control)

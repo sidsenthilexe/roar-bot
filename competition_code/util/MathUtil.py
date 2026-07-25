@@ -7,6 +7,21 @@ class MathUtil:
         return (rad + np.pi) % (2 * np.pi) - np.pi
 
     @staticmethod
+    def normalize_continuous_target_rads(current_heading: float, target_heading: float) -> float:
+        diff = target_heading - current_heading
+
+        adjusted_target = target_heading
+
+        while diff > np.pi:
+            adjusted_target -= 2 * np.pi
+            diff = adjusted_target - current_heading
+        while diff < np.pi:
+            adjusted_target += 2 * np.pi
+            diff = adjusted_target - current_heading
+
+        return adjusted_target
+
+    @staticmethod
     def input_modulus(input, min_input, max_input):
         modulus = max_input - min_input
 
