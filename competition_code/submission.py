@@ -55,7 +55,7 @@ class RoarCompetitionSolution:
         )
 
         self.speed_controller = PIDController(0.9, 0.1, 0.1, 0.05)
-        self.steer_controller = PIDController(1.0, 0.0, 0.0, 0.05)
+        self.steer_controller = PIDController(1.0, 0.0, 0.0, 0.05, True)
 
     async def step(
         self
@@ -79,13 +79,10 @@ class RoarCompetitionSolution:
         throttle_normalized = np.clip(throttle_control, 0.0, 1.0)
         brake_normalized = np.clip(-throttle_control, 0.0, 1.0)
 
-        target_steer = SteerController.get_target_heading(vehicle_velocity_norm, self, vehicle_location, vehicle_rotation)
-        current_steer = MathUtil.normalize_rad(vehicle_rotation[2])
-        target_steer = MathUtil.normalize_continuous_target_rads(current_steer, target_steer)
-
+        target_steer = SteerController.get_target_heading(vehicle_velocity_norm, self, vehicle_location)
 
         self.steer_controller.set_setpoint(target_steer)
-        steer_control = self.steer_controller.calculate(current_steer)
+        steer_control = self.steer_controller.calculate(vehicle_rotation[2])
         steer_normalized = np.clip(-steer_control, -1.0, 1.0)
 
         #throttle_normalized, brake_normalized, steer_control = MathUtil.clamp_inputs(throttle_normalized, brake_normalized, steer_control)
@@ -98,6 +95,6 @@ class RoarCompetitionSolution:
             "reverse": 0,
             "target_gear": 0
         }
-        print(f"Throttle: {throttle_normalized}, Target Speed: {target_speed}, Current Speed: {vehicle_velocity_norm}, Target Angle: {target_steer}, Current Angle: {vehicle_rotation[2]}, Steer Control: {steer_normalized}")
+        print(f"Throttle: {throttle_normalized}, Target Speed: {target_speed}, Current Speed: {vehicle_velocity_norm}, Steer Control: {steer_control}, Target Heading: {target_steer}, Vehicle Heading: {vehicle_rotation[2]}")
         await self.vehicle.apply_action(control)
         return control

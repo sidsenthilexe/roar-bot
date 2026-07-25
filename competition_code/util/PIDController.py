@@ -7,7 +7,7 @@ import math
 
 class PIDController:
 
-    def __init__(self, kp, ki, kd, period = 0.02):
+    def __init__(self, kp, ki, kd, period = 0.02, angle_mode = False):
         if (type(kp) != int and type(kp) != float):
             raise TypeError("Kp must be int or float") 
         if (type(ki) != int and type(ki) != float):
@@ -51,6 +51,7 @@ class PIDController:
         self.have_measurement = False
         self.have_setpoint = False
 
+        self.angle_mode = angle_mode
 
     def set_pid(self, kp, ki, kd):
         if (type(kp) != int and type(kp) != float):
@@ -72,7 +73,7 @@ class PIDController:
         self.kd = kd
     
     def set_iZone(self, iZone):
-        if (type(iZone) != int or float):
+        if (type(iZone) != int or type(iZone) != float):
             raise TypeError("IZone must be int or float")
         if (iZone < 0):
             raise ValueError("IZone must be non-negative")
@@ -81,7 +82,9 @@ class PIDController:
         self.setpoint = setpoint
         self.have_setpoint = True
 
-        if (self.continuous):
+        if (self.angle_mode):
+            self.error = MathUtil.normalize_rad(self.setpoint - self.measurement)
+        elif (self.continuous):
             error_bound = (self.max_input - self.min_input) / 2.0
             self.error = MathUtil.input_modulus(self.setpoint - self.measurement, -error_bound, error_bound)
         else:
@@ -117,7 +120,9 @@ class PIDController:
         self.prev_error = self.error
         self.have_measurement = True
 
-        if (self.continuous):
+        if (self.angle_mode):
+            self.error = MathUtil.normalize_rad(self.setpoint - self.measurement)
+        elif (self.continuous):
             error_bound = (self.max_input - self.min_input) / 2.0
             self.error = MathUtil.input_modulus(self.setpoint - self.measurement, -error_bound, error_bound)
         else:
@@ -139,4 +144,4 @@ class PIDController:
         self.prev_error = 0
         self.total_error = 0
         self.error_derivative = 0
-        self.have_measurement = 0
+        self.have_measurement = False
