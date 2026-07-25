@@ -9,7 +9,7 @@ import os
 CAR_WIDTH = 2.1634500027          # Width of the car in meters
 CAR_LENGTH = 4.7917795181         # Length of the car in meters
 WALL_MARGIN = 2.0                 # Minimum distance to keep from track walls
-MIN_WAYPOINT_DIST = 0.7           # Minimum allowed distance between consecutive waypoints in meters
+MIN_WAYPOINT_DIST = 0.2           # Minimum allowed distance between consecutive waypoints in meters
 # ==========================================
 
 class TrackEditor:
@@ -364,13 +364,13 @@ class TrackEditor:
             # Closed loop optimization (smooth connection at start/end)
             self.optimize_racing_line(fix_endpoints=False, closed_loop=True)
 
-    def optimize_racing_line(self, iterations=300, alpha=0.2, fix_endpoints=False, closed_loop=False):
+    def optimize_racing_line(self, iterations=300, alpha_smooth=0.2, alpha_length=0.1, fix_endpoints=False, closed_loop=False):
         """
-        Geometrically optimizes the racing line using iterative Minimum Curvature.
-        Ensures waypoints maintain at least self.wall_margin distance from track walls.
+        Geometrically optimizes the racing line using iterative Minimum Curvature
+        blended with a Shortest Path (elastic band) tension.
         """
         mode_msg = "closed loop" if closed_loop else ("locking endpoints" if fix_endpoints else "including endpoints")
-        print(f"Optimizing racing line for minimum curvature ({mode_msg})...")
+        print(f"Optimizing racing line (Curvature + Tension) ({mode_msg})...")
         
         self.undo_stack.append((self.x.copy(), self.y.copy()))
         if len(self.undo_stack) > 50:
@@ -407,12 +407,17 @@ class TrackEditor:
                     next_i  = min(num_pts - 1, i + 1)
                     next2_i = min(num_pts - 1, i + 2)
                 
-                # Minimum curvature theoretical relaxation target
-                target_x = (-temp_x[prev2_i] + 4 * temp_x[prev_i] + 4 * temp_x[next_i] - temp_x[next2_i]) / 6.0
-                target_y = (-temp_y[prev2_i] + 4 * temp_y[prev_i] + 4 * temp_y[next_i] - temp_y[next2_i]) / 6.0
+                # 1. Minimum curvature relaxation target (Smoothness)
+                smooth_x = (-temp_x[prev2_i] + 4 * temp_x[prev_i] + 4 * temp_x[next_i] - temp_x[next2_i]) / 6.0
+                smooth_y = (-temp_y[prev2_i] + 4 * temp_y[prev_i] + 4 * temp_y[next_i] - temp_y[next2_i]) / 6.0
 
-                cand_x = temp_x[i] + alpha * (target_x - temp_x[i])
-                cand_y = temp_y[i] + alpha * (target_y - temp_y[i])
+                # 2. Shortest path target (Elastic Tension)
+                length_x = (temp_x[prev_i] + temp_x[next_i]) / 2.0
+                length_y = (temp_y[prev_i] + temp_y[next_i]) / 2.0
+
+                # Blend both targets based on their alphas
+                cand_x = temp_x[i] + alpha_smooth * (smooth_x - temp_x[i]) + alpha_length * (length_x - temp_x[i])
+                cand_y = temp_y[i] + alpha_smooth * (smooth_y - temp_y[i]) + alpha_length * (length_y - temp_y[i])
 
                 # Find closest point on reference line
                 dists = np.hypot(self.ref_x - cand_x, self.ref_y - cand_y)
@@ -469,16 +474,26 @@ class TrackEditor:
             save_dict['waypoints'] = np.column_stack([self.x, self.y])
 
         if 'rotations' in save_dict:
+            # Calculate distances between points to get a cleaner vector
             dx = np.gradient(self.x)
             dy = np.gradient(self.y)
             yaws = np.arctan2(dy, dx)
             
+            # Unwrap yaws to prevent jumps between pi and -pi
+            yaws = np.unwrap(yaws)
+            
+            # Apply a light moving average filter to smooth out heading jitters
+            kernel_size = 3
+            kernel = np.ones(kernel_size) / kernel_size
+            yaws_padded = np.pad(yaws, (kernel_size//2, kernel_size//2), mode='edge')
+            smoothed_yaws = np.convolve(yaws_padded, kernel, mode='valid')
+            
             rot_shape = save_dict['rotations'].shape
             if len(rot_shape) == 1 or (len(rot_shape) == 2 and rot_shape[1] == 1):
-                save_dict['rotations'] = yaws
+                save_dict['rotations'] = smoothed_yaws
             elif len(rot_shape) == 2 and rot_shape[1] >= 3:
                 new_rots = np.zeros((num_points, rot_shape[1]))
-                new_rots[:, -1] = yaws
+                new_rots[:, -1] = smoothed_yaws
                 save_dict['rotations'] = new_rots
 
         if 'lane_widths' in save_dict:
@@ -498,7 +513,7 @@ class TrackEditor:
 
 if __name__ == "__main__":
     REFERENCE_TRACK = "competition_code/waypoints/Monza.npz"
-    EDITABLE_PATH = "competition_code/waypoints/waypointsPrimary.npz"
+    EDITABLE_PATH = "competition_code/waypoints/output_waypointsPrimary1.npz"
     
     if os.path.exists(REFERENCE_TRACK) and os.path.exists(EDITABLE_PATH):
         print(f"Loading {REFERENCE_TRACK} as boundaries...")
