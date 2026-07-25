@@ -7,7 +7,7 @@ import math
 
 class PIDController:
 
-    def __init__(self, kp, ki, kd, period = 0.02, angle_mode = False):
+    def __init__(self, kp, ki, kd, period = 0.02):
         if (type(kp) != int and type(kp) != float):
             raise TypeError("Kp must be int or float") 
         if (type(ki) != int and type(ki) != float):
@@ -51,8 +51,6 @@ class PIDController:
         self.have_measurement = False
         self.have_setpoint = False
 
-        self.angle_mode = angle_mode
-
     def set_pid(self, kp, ki, kd):
         if (type(kp) != int and type(kp) != float):
             raise TypeError("Kp must be int or float") 
@@ -82,13 +80,7 @@ class PIDController:
         self.setpoint = setpoint
         self.have_setpoint = True
 
-        if (self.angle_mode):
-            self.error = MathUtil.normalize_rad(self.setpoint - self.measurement)
-        elif (self.continuous):
-            error_bound = (self.max_input - self.min_input) / 2.0
-            self.error = MathUtil.input_modulus(self.setpoint - self.measurement, -error_bound, error_bound)
-        else:
-            self.error = self.setpoint - self.measurement
+        self.error = self.setpoint - self.measurement
 
         self.error_derivative = (self.error - self.prev_error) / self.period
 

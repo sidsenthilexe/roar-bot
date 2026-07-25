@@ -6,6 +6,7 @@ Please do not change anything else but fill out the to-do sections.
 from typing import List, Tuple, Dict, Optional
 import roar_py_interface
 import numpy as np
+import matplotlib.pyplot as plt
 from util.SpeedMap import SpeedMap
 from util.MathUtil import MathUtil
 from util.PIDController import PIDController
@@ -55,8 +56,24 @@ class RoarCompetitionSolution:
         )
 
         self.speed_controller = PIDController(1.0, 0.1, 0.1, 0.05)
-        self.steer_controller = PIDController(1.0, 0.0, 0.0, 0.05, True)
+        self.steer_controller = PIDController(1.0, 0.0, 0.0, 0.05)
 
+        plt.ion()
+        self.fig, self.ax = plt.subplots(figsize=(8, 4))
+        
+        self.time_steps = []
+        self.target_steers = []
+        self.current_steers = []
+        self.step_counter = 0
+
+        self.ax.set_ylim(0, 100)
+
+        self.line_target, = self.ax.plot([], [], label="Target Steer", color="r", linestyle="--")
+        self.line_current, = self.ax.plot([], [], label="Current Steer", color="b")
+
+        self.ax.legend(loc="upper right")
+        self.ax.grid(True)
+        self.plots_out = 1
     async def step(
         self
     ) -> None:
@@ -79,12 +96,31 @@ class RoarCompetitionSolution:
         brake_normalized = np.clip(-throttle_control, 0.0, 1.0)
 
         target_steer = SteerController.get_target_heading(vehicle_velocity_norm, self, vehicle_location)
+        current_steer = MathUtil.normalize_rad(vehicle_rotation[2])
+        target_steer = MathUtil.normalize_continuous_target_rads(current_steer, target_steer)
 
         self.steer_controller.set_setpoint(target_steer)
-        steer_control = self.steer_controller.calculate(vehicle_rotation[2])
+        steer_control = self.steer_controller.calculate(current_steer)
         steer_normalized = np.clip(-steer_control, -1.0, 1.0)
 
         #throttle_normalized, brake_normalized, steer_control = MathUtil.clamp_inputs(throttle_normalized, brake_normalized, steer_control)
+
+        self.step_counter += 1
+        self.time_steps.append(self.step_counter)
+        self.target_speeds.append(target_steer)
+        self.current_speeds.append(current_steer)
+
+        self.line_target.set_data(self.time_steps, self.target_steers)
+        self.line_current.set_data(self.time_steps, self.current_steers)
+
+        self.ax.relim()
+        self.ax.autoscale_view()
+        self.ax.set_ylim(top=100)
+
+        if self.step_counter % 2769 == 0:
+            name = "plot" + str(self.plots_out)
+            self.fig.savefig(name, dpi=300, bbox_inches='tight')
+            self.plots_out += 1
 
         control = {
             "throttle": throttle_normalized,
