@@ -9,7 +9,7 @@ import os
 CAR_WIDTH = 2.1634500027          # Width of the car in meters
 CAR_LENGTH = 4.7917795181         # Length of the car in meters
 WALL_MARGIN = 2.0                 # Minimum distance to keep from track walls
-MIN_WAYPOINT_DIST = 2.0           # Minimum allowed distance between consecutive waypoints in meters
+MIN_WAYPOINT_DIST = 0.7           # Minimum allowed distance between consecutive waypoints in meters
 # ==========================================
 
 class TrackEditor:
@@ -498,7 +498,7 @@ class TrackEditor:
 
 if __name__ == "__main__":
     REFERENCE_TRACK = "competition_code/waypoints/Monza.npz"
-    EDITABLE_PATH = "competition_code/waypoints/edited_waypointsPrimary.npz"
+    EDITABLE_PATH = "competition_code/waypoints/waypointsPrimary.npz"
     
     if os.path.exists(REFERENCE_TRACK) and os.path.exists(EDITABLE_PATH):
         print(f"Loading {REFERENCE_TRACK} as boundaries...")
