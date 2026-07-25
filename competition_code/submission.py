@@ -107,8 +107,8 @@ class RoarCompetitionSolution:
 
         self.step_counter += 1
         self.time_steps.append(self.step_counter)
-        self.target_speeds.append(target_steer)
-        self.current_speeds.append(current_steer)
+        self.target_steers.append(target_steer)
+        self.target_steers.append(current_steer)
 
         self.line_target.set_data(self.time_steps, self.target_steers)
         self.line_current.set_data(self.time_steps, self.current_steers)
