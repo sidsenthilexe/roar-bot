@@ -66,7 +66,7 @@ class RoarCompetitionSolution:
         self.current_steers = []
         self.step_counter = 0
 
-        self.ax.set_ylim(0, 100)
+        self.ax.set_ylim(-4, 4)
 
         self.line_target, = self.ax.plot([], [], label="Target Steer", color="r", linestyle="--")
         self.line_current, = self.ax.plot([], [], label="Current Steer", color="b")
@@ -115,7 +115,7 @@ class RoarCompetitionSolution:
 
         self.ax.relim()
         self.ax.autoscale_view()
-        self.ax.set_ylim(top=100)
+        self.ax.set_ylim(top=4, bottom=-4)
 
         if self.step_counter % 2769 == 0:
             name = "plot" + str(self.plots_out)
