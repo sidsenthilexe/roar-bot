@@ -112,13 +112,7 @@ class PIDController:
         self.prev_error = self.error
         self.have_measurement = True
 
-        if (self.angle_mode):
-            self.error = MathUtil.normalize_rad(self.setpoint - self.measurement)
-        elif (self.continuous):
-            error_bound = (self.max_input - self.min_input) / 2.0
-            self.error = MathUtil.input_modulus(self.setpoint - self.measurement, -error_bound, error_bound)
-        else:
-            self.error = self.setpoint - self.measurement
+        self.error = self.setpoint - self.measurement
 
         self.error_derivative = (self.error - self.prev_error) / self.period
 
