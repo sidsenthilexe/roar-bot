@@ -130,6 +130,6 @@ class RoarCompetitionSolution:
             "reverse": 0,
             "target_gear": 0
         }
-        print(f"Current Waypoint Idx: {self.current_waypoint_idx}, Velocity: {vehicle_velocity_norm}")
+        print(f"Throttle: {throttle_normalized}, Target Speed: {target_speed}, Current Speed: {vehicle_velocity_norm}, Steer Control: {steer_control}, Target Heading: {target_steer}, Vehicle Heading: {current_steer}")
         await self.vehicle.apply_action(control)
         return control
