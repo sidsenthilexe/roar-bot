@@ -56,7 +56,7 @@ class RoarCompetitionSolution:
         )
 
         self.speed_controller = PIDController(1.0, 0.1, 0.1, 0.05)
-        self.steer_controller = PIDController(1.0, 0.0, 0.0, 0.05)
+        self.steer_controller = PIDController(0.9, 0.0, 0.0, 0.05)
 
         plt.ion()
         self.fig, self.ax = plt.subplots(figsize=(8, 4))
@@ -130,6 +130,6 @@ class RoarCompetitionSolution:
             "reverse": 0,
             "target_gear": 0
         }
-        print(f"Throttle: {throttle_normalized}, Target Speed: {target_speed}, Current Speed: {vehicle_velocity_norm}, Steer Control: {steer_control}, Target Heading: {target_steer}, Vehicle Heading: {current_steer}")
+        #print(f"Throttle: {throttle_normalized}, Target Speed: {target_speed}, Current Speed: {vehicle_velocity_norm}, Steer Control: {steer_control}, Target Heading: {target_steer}, Vehicle Heading: {current_steer}")
         await self.vehicle.apply_action(control)
         return control

@@ -513,7 +513,7 @@ class TrackEditor:
 
 if __name__ == "__main__":
     REFERENCE_TRACK = "competition_code/waypoints/Monza.npz"
-    EDITABLE_PATH = "competition_code/waypoints/output_waypointsPrimary1.npz"
+    EDITABLE_PATH = "competition_code/waypoints/output_output_waypointsPrimary1.npz"
     
     if os.path.exists(REFERENCE_TRACK) and os.path.exists(EDITABLE_PATH):
         print(f"Loading {REFERENCE_TRACK} as boundaries...")
