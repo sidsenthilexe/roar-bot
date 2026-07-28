@@ -13,10 +13,8 @@ MIN_WAYPOINT_DIST = 0.2           # Minimum allowed distance between consecutive
 # ==========================================
 
 class TrackEditor:
-    def __init__(self, reference_filepath, target_filepath, car_width=CAR_WIDTH, car_length=CAR_LENGTH, wall_margin=WALL_MARGIN, min_dist=MIN_WAYPOINT_DIST):
+    def __init__(self, reference_filepath, target_filepath_1, target_filepath_2, car_width=CAR_WIDTH, car_length=CAR_LENGTH, wall_margin=WALL_MARGIN, min_dist=MIN_WAYPOINT_DIST):
         self.ref_filepath = reference_filepath
-        self.target_filepath = target_filepath
-        self.filename = os.path.basename(target_filepath)
         self.car_width = car_width
         self.car_length = car_length
         self.wall_margin = wall_margin
@@ -25,52 +23,61 @@ class TrackEditor:
         self.edit_mode = 'inner'
         self.show_car_boxes = False
         self.current_mouse_event = None
+        self.active_track_idx = 0 # 0 for Path 1, 1 for Path 2
         
         # 1. Load Reference Data
         self.ref_x, self.ref_y, self.ref_widths, *_ = self._load_npz(reference_filepath)
         if self.ref_widths is None:
             raise ValueError(f"Reference file '{reference_filepath}' must contain 'lane_widths' to draw track bounds.")
             
-        # 2. Load Target Data
-        target_data = self._load_npz(target_filepath, keep_original=True)
-        self.x, self.y, self.widths = target_data[0], target_data[1], target_data[2]
-        self.original_dict = target_data[3]
-        self.load_mode = target_data[4]
+        # 2. Load Target Data for BOTH tracks
+        self.tracks = []
+        self._init_track_data(target_filepath_1)
+        self._init_track_data(target_filepath_2)
 
         # 3. Setup Figure
         self.fig, self.ax = plt.subplots(figsize=(12, 8))
-        self.fig.canvas.manager.set_window_title(f"Racing Line Editor - {self.filename}")
+        self.fig.canvas.manager.set_window_title(f"Dual Racing Line Editor")
         
         # 4. Draw Static Reference Track
         self._plot_reference_track()
         
-        # 5. Draw Editable Target Track
-        car_widths_array = np.full_like(self.x, self.car_width)
-        car_segments = self._calculate_perpendicular_segments(self.x, self.y, car_widths_array)
+        # 5. Draw Editable Target Tracks
+        # Track 1 Visuals (Blue / Red)
+        self.line1, = self.ax.plot(self.tracks[0]['x'], self.tracks[0]['y'], 'b-', linewidth=1.5, zorder=4, label="Path 1")
+        self.scatter1 = self.ax.scatter([], [], zorder=5, edgecolors='black', linewidths=0.5)
+        
+        # Track 2 Visuals (Purple / Cyan)
+        self.line2, = self.ax.plot(self.tracks[1]['x'], self.tracks[1]['y'], color='purple', linestyle='-', linewidth=1.5, zorder=4, label="Path 2")
+        self.scatter2 = self.ax.scatter([], [], zorder=5, edgecolors='black', linewidths=0.5)
+        
+        self.lines = [self.line1, self.line2]
+        self.scatters = [self.scatter1, self.scatter2]
+
+        # Car Boxes (Only shown for the ACTIVE track to prevent clutter)
+        car_widths_array = np.full_like(self.tracks[0]['x'], self.car_width)
+        car_segments = self._calculate_perpendicular_segments(self.tracks[0]['x'], self.tracks[0]['y'], car_widths_array)
         self.car_lines = LineCollection(car_segments, colors='green', linewidths=2.0, alpha=0.8, zorder=3)
         self.ax.add_collection(self.car_lines)
 
-        car_box_segments = self._calculate_car_boxes(self.x, self.y)
+        car_box_segments = self._calculate_car_boxes(self.tracks[0]['x'], self.tracks[0]['y'])
         self.car_boxes = LineCollection(car_box_segments, colors='magenta', linewidths=1.0, alpha=0.6, zorder=3.5)
         self.car_boxes.set_visible(self.show_car_boxes)
         self.ax.add_collection(self.car_boxes)
 
-        self.line, = self.ax.plot(self.x, self.y, 'b-', linewidth=1.5, zorder=4, label="Racing Line")
-        
-        self.scatter = self.ax.scatter([], [], zorder=5, edgecolors='black', linewidths=0.5)
         self._update_scatter_points()
         
         self.ax.axis('equal')
         self.ax.grid(True, linestyle='--', alpha=0.4)
         self.ax.set_xlabel("X Coordinate (m)")
         self.ax.set_ylabel("Y Coordinate (m)")
+        self.ax.legend()
         
         self._update_title()
         
         # 6. State Variables
         self._ind = None
         self._dragging = False
-        self.undo_stack = []
 
         # 7. Connect Events
         self.fig.canvas.mpl_connect('button_press_event', self.on_press)
@@ -79,33 +86,59 @@ class TrackEditor:
         self.fig.canvas.mpl_connect('key_press_event', self.on_key)
         self.fig.canvas.mpl_connect('scroll_event', self.on_scroll) 
 
-    def _update_scatter_points(self):
-        colors = ['red'] * len(self.x)
-        if len(self.x) > 0:
-            colors[0] = 'green'
-            colors[-1] = 'orange'
-        
-        sizes = [15] * len(self.x)
-        if len(self.x) > 0:
-            sizes[0] = sizes[-1] = 50
-            
-        self.scatter.set_offsets(np.column_stack([self.x, self.y]))
-        self.scatter.set_color(colors)
-        self.scatter.set_sizes(sizes)
+    def _init_track_data(self, filepath):
+        target_data = self._load_npz(filepath, keep_original=True)
+        self.tracks.append({
+            'x': target_data[0],
+            'y': target_data[1],
+            'widths': target_data[2],
+            'original_dict': target_data[3],
+            'load_mode': target_data[4],
+            'filepath': filepath,
+            'filename': os.path.basename(filepath),
+            'undo_stack': []
+        })
 
-    def _calculate_lap_length(self):
-        if len(self.x) < 2:
+    def _update_scatter_points(self):
+        for idx in range(2):
+            x, y = self.tracks[idx]['x'], self.tracks[idx]['y']
+            
+            # Base colors depending on the track
+            base_color = 'red' if idx == 0 else 'cyan'
+            colors = [base_color] * len(x)
+            
+            if len(x) > 0:
+                colors[0] = 'green'
+                colors[-1] = 'orange'
+            
+            sizes = [15] * len(x)
+            if len(x) > 0:
+                sizes[0] = sizes[-1] = 50
+                
+            self.scatters[idx].set_offsets(np.column_stack([x, y]))
+            self.scatters[idx].set_color(colors)
+            self.scatters[idx].set_sizes(sizes)
+            
+            # Dim the inactive track
+            alpha = 1.0 if idx == self.active_track_idx else 0.3
+            self.lines[idx].set_alpha(alpha)
+            self.scatters[idx].set_alpha(alpha)
+
+    def _calculate_lap_length(self, track_idx):
+        x, y = self.tracks[track_idx]['x'], self.tracks[track_idx]['y']
+        if len(x) < 2:
             return 0.0
-        return float(np.sum(np.hypot(np.diff(self.x), np.diff(self.y))))
+        return float(np.sum(np.hypot(np.diff(x), np.diff(y))))
 
     def _update_title(self):
-        mode_str = "Middle Points" if self.edit_mode == 'inner' else "Start & End Points"
-        lap_len = self._calculate_lap_length()
+        mode_str = "Middle" if self.edit_mode == 'inner' else "Start/End"
+        active_t = self.tracks[self.active_track_idx]
+        lap_len = self._calculate_lap_length(self.active_track_idx)
         box_str = "ON" if self.show_car_boxes else "OFF"
         
         title_text = (
-            f"Editing: {self.filename} | Target: {mode_str} | Waypoints: {len(self.x)} | Lap Distance: {lap_len:.2f} m\n"
-            f"'t'=Toggle Edit | 'd'=Delete | 'e'=Clean Close (<{self.min_dist}m) | 'b'=Car Boxes ({box_str}) | 's'=Save | 'z'=Undo | 'o'/'p'=Optimize"
+            f"Active: PATH {self.active_track_idx + 1} ({active_t['filename']}) | Mode: {mode_str} | Dist: {lap_len:.2f} m\n"
+            f"'1'/'2'=Switch | 't'=Toggle | 'd'=Del | 'e'=Clean | 'b'=Box | 's'=Save | 'g'=Radii | 'z'=Undo | 'o'/'p'=Opt"
         )
         self.ax.set_title(title_text, fontsize=9.5, color='black', fontweight='normal')
         self.fig.canvas.draw_idle()
@@ -194,42 +227,56 @@ class TrackEditor:
         return boxes
 
     def _refresh_visuals(self):
-        self.line.set_data(self.x, self.y)
+        for idx in range(2):
+            self.lines[idx].set_data(self.tracks[idx]['x'], self.tracks[idx]['y'])
+            
         self._update_scatter_points()
         
-        car_widths_array = np.full_like(self.x, self.car_width)
-        self.car_lines.set_segments(self._calculate_perpendicular_segments(self.x, self.y, car_widths_array))
+        active_x = self.tracks[self.active_track_idx]['x']
+        active_y = self.tracks[self.active_track_idx]['y']
+        
+        car_widths_array = np.full_like(active_x, self.car_width)
+        self.car_lines.set_segments(self._calculate_perpendicular_segments(active_x, active_y, car_widths_array))
         
         if self.show_car_boxes:
-            self.car_boxes.set_segments(self._calculate_car_boxes(self.x, self.y))
+            self.car_boxes.set_segments(self._calculate_car_boxes(active_x, active_y))
             
         self._update_title()
+
+    def push_undo(self):
+        active_t = self.tracks[self.active_track_idx]
+        active_t['undo_stack'].append((active_t['x'].copy(), active_t['y'].copy()))
+        if len(active_t['undo_stack']) > 50:
+            active_t['undo_stack'].pop(0)
 
     def clean_close_waypoints(self, min_distance=None):
         if min_distance is None:
             min_distance = self.min_dist
 
-        if len(self.x) <= 3:
+        active_t = self.tracks[self.active_track_idx]
+        x, y = active_t['x'], active_t['y']
+
+        if len(x) <= 3:
             return
 
         keep_indices = [0]
-        for i in range(1, len(self.x) - 1):
+        for i in range(1, len(x) - 1):
             last_kept_idx = keep_indices[-1]
-            dist = np.hypot(self.x[i] - self.x[last_kept_idx], self.y[i] - self.y[last_kept_idx])
+            dist = np.hypot(x[i] - x[last_kept_idx], y[i] - y[last_kept_idx])
             if dist >= min_distance:
                 keep_indices.append(i)
 
-        if keep_indices[-1] != len(self.x) - 1:
-            dist_to_last = np.hypot(self.x[-1] - self.x[keep_indices[-1]], self.y[-1] - self.y[keep_indices[-1]])
+        if keep_indices[-1] != len(x) - 1:
+            dist_to_last = np.hypot(x[-1] - x[keep_indices[-1]], y[-1] - y[keep_indices[-1]])
             if dist_to_last < min_distance and len(keep_indices) > 1:
                 keep_indices.pop()
-            keep_indices.append(len(self.x) - 1)
+            keep_indices.append(len(x) - 1)
 
-        removed_count = len(self.x) - len(keep_indices)
+        removed_count = len(x) - len(keep_indices)
         if removed_count > 0:
-            self.x = self.x[keep_indices]
-            self.y = self.y[keep_indices]
-            print(f"Cleaned up {removed_count} waypoints closer than {min_distance}m!")
+            active_t['x'] = x[keep_indices]
+            active_t['y'] = y[keep_indices]
+            print(f"Path {self.active_track_idx + 1}: Cleaned up {removed_count} waypoints closer than {min_distance}m!")
             self._refresh_visuals()
 
     def get_closest_point(self, event, ignore_mode=False):
@@ -239,15 +286,18 @@ class TrackEditor:
         xlim = self.ax.get_xlim()
         threshold = (xlim[1] - xlim[0]) * 0.02
         
+        active_t = self.tracks[self.active_track_idx]
+        x, y = active_t['x'], active_t['y']
+        
         if ignore_mode:
-            distances = np.hypot(self.x - event.xdata, self.y - event.ydata)
+            distances = np.hypot(x - event.xdata, y - event.ydata)
             closest_idx = np.argmin(distances)
             if distances[closest_idx] < threshold:
                 return closest_idx
             return None
 
         if self.edit_mode == 'inner':
-            valid_x, valid_y = self.x[1:-1], self.y[1:-1]
+            valid_x, valid_y = x[1:-1], y[1:-1]
             if len(valid_x) == 0:
                 return None
                 
@@ -258,29 +308,28 @@ class TrackEditor:
                 return closest_valid_idx + 1
                 
         elif self.edit_mode == 'ends':
-            ends_x = np.array([self.x[0], self.x[-1]])
-            ends_y = np.array([self.y[0], self.y[-1]])
+            ends_x = np.array([x[0], x[-1]])
+            ends_y = np.array([y[0], y[-1]])
             
             distances = np.hypot(ends_x - event.xdata, ends_y - event.ydata)
             closest_valid_idx = np.argmin(distances)
             
             if distances[closest_valid_idx] < threshold:
-                return 0 if closest_valid_idx == 0 else len(self.x) - 1
+                return 0 if closest_valid_idx == 0 else len(x) - 1
                 
         return None
 
     def delete_waypoint(self, idx):
-        if idx is None or len(self.x) <= 3:
+        active_t = self.tracks[self.active_track_idx]
+        if idx is None or len(active_t['x']) <= 3:
             return
 
-        self.undo_stack.append((self.x.copy(), self.y.copy()))
-        if len(self.undo_stack) > 50:
-            self.undo_stack.pop(0)
+        self.push_undo()
 
-        self.x = np.delete(self.x, idx)
-        self.y = np.delete(self.y, idx)
+        active_t['x'] = np.delete(active_t['x'], idx)
+        active_t['y'] = np.delete(active_t['y'], idx)
         
-        print(f"Deleted waypoint {idx}. ({len(self.x)} waypoints remaining)")
+        print(f"Path {self.active_track_idx + 1}: Deleted waypoint {idx}. ({len(active_t['x'])} waypoints remaining)")
         self._refresh_visuals()
 
     def on_scroll(self, event):
@@ -318,9 +367,7 @@ class TrackEditor:
         
         self._ind = self.get_closest_point(event)
         if self._ind is not None:
-            self.undo_stack.append((self.x.copy(), self.y.copy()))
-            if len(self.undo_stack) > 50:
-                self.undo_stack.pop(0)
+            self.push_undo()
             self._dragging = True
 
     def on_motion(self, event):
@@ -328,8 +375,9 @@ class TrackEditor:
         if not self._dragging or self._ind is None or event.inaxes != self.ax: 
             return
         
-        self.x[self._ind] = event.xdata
-        self.y[self._ind] = event.ydata
+        active_t = self.tracks[self.active_track_idx]
+        active_t['x'][self._ind] = event.xdata
+        active_t['y'][self._ind] = event.ydata
         self._refresh_visuals()
 
     def on_release(self, event):
@@ -337,17 +385,27 @@ class TrackEditor:
         self._ind = None
 
     def on_key(self, event):
-        if event.key == 's':
+        if event.key == '1':
+            self.active_track_idx = 0
+            self._refresh_visuals()
+            print("Switched to Path 1")
+        elif event.key == '2':
+            self.active_track_idx = 1
+            self._refresh_visuals()
+            print("Switched to Path 2")
+        elif event.key == 's':
             self.save_data()
         elif event.key == 'e':
-            self.undo_stack.append((self.x.copy(), self.y.copy()))
+            self.push_undo()
             self.clean_close_waypoints()
+        elif event.key == 'g':
+            self.calculate_and_save_radii()
         elif event.key in ['d', 'delete', 'backspace']:
             target_idx = self.get_closest_point(self.current_mouse_event, ignore_mode=True)
             if target_idx is not None:
                 self.delete_waypoint(target_idx)
             else:
-                print("Hover over a waypoint to delete it.")
+                print("Hover over a waypoint on the active path to delete it.")
         elif event.key == 'z' or event.key == 'ctrl+z':
             self.undo()
         elif event.key == 't':
@@ -358,25 +416,79 @@ class TrackEditor:
             self.car_boxes.set_visible(self.show_car_boxes)
             self._refresh_visuals()
         elif event.key == 'o':
-            # Standard optimization (open loop)
             self.optimize_racing_line(fix_endpoints=False, closed_loop=False)
         elif event.key == 'p':
-            # Closed loop optimization (smooth connection at start/end)
             self.optimize_racing_line(fix_endpoints=False, closed_loop=True)
 
-    def optimize_racing_line(self, iterations=300, alpha_smooth=0.2, alpha_length=0.1, fix_endpoints=False, closed_loop=False):
-        """
-        Geometrically optimizes the racing line using iterative Minimum Curvature
-        blended with a Shortest Path (elastic band) tension.
-        """
-        mode_msg = "closed loop" if closed_loop else ("locking endpoints" if fix_endpoints else "including endpoints")
-        print(f"Optimizing racing line (Curvature + Tension) ({mode_msg})...")
+    def calculate_and_save_radii(self):
+        active_t = self.tracks[self.active_track_idx]
+        print(f"Calculating and saving waypoint radii for Path {self.active_track_idx + 1}...")
         
-        self.undo_stack.append((self.x.copy(), self.y.copy()))
-        if len(self.undo_stack) > 50:
-            self.undo_stack.pop(0)
+        x, y = active_t['x'], active_t['y']
+        output_lines = []
+        num_wp = len(x)
+        
+        if num_wp < 3:
+            print("Not enough waypoints to calculate radii.")
+            return
 
-        # Precompute reference track normal vectors for wall margin checking
+        # ==========================================
+        # TUNING PARAMETERS FOR SMOOTHNESS
+        # ==========================================
+        step = 6 
+        smooth_window = 3 
+        # ==========================================
+
+        raw_radii = []
+
+        # 1. Calculate raw macro-radii
+        for i in range(num_wp):
+            p1 = np.array([x[(i - step) % num_wp], y[(i - step) % num_wp]])
+            p2 = np.array([x[i], y[i]])
+            p3 = np.array([x[(i + step) % num_wp], y[(i + step) % num_wp]])
+            
+            a = np.linalg.norm(p2 - p3)
+            b = np.linalg.norm(p1 - p3)
+            c = np.linalg.norm(p1 - p2)
+            
+            cross = np.abs(np.cross(p2 - p1, p3 - p1))
+            
+            if cross < 1e-4: 
+                radius = 9999
+            else:
+                radius_exact = (a * b * c) / (2 * cross)
+                radius = min(int(np.round(radius_exact)), 9999)
+            
+            raw_radii.append(radius)
+            
+        # 2. Apply moving average and write ONLY radii to the output array
+        for i in range(num_wp):
+            window_vals = []
+            for j in range(-smooth_window, smooth_window + 1):
+                window_vals.append(raw_radii[(i + j) % num_wp])
+            
+            smoothed_radius = int(np.mean(window_vals))
+            output_lines.append(f"{smoothed_radius}")  # Removed the index number
+            
+        filename = f"radii_{active_t['filename']}.txt"
+        with open(filename, "w") as f:
+            f.write("\n".join(output_lines))
+        print(f"Successfully saved smoothed radii to {filename}!")
+        
+        self.ax.set_title(f"RADII SAVED TO {filename}", color='blue', fontweight='bold', fontsize=12)
+        self.fig.canvas.draw_idle()
+        
+        timer = self.fig.canvas.new_timer(interval=2000)
+        timer.add_callback(self._update_title)
+        timer.start()
+
+    def optimize_racing_line(self, iterations=300, alpha_smooth=0.2, alpha_length=0.1, fix_endpoints=False, closed_loop=False):
+        mode_msg = "closed loop" if closed_loop else ("locking endpoints" if fix_endpoints else "including endpoints")
+        print(f"Path {self.active_track_idx + 1}: Optimizing racing line (Curvature + Tension) ({mode_msg})...")
+        
+        self.push_undo()
+        active_t = self.tracks[self.active_track_idx]
+
         ref_dx = np.gradient(self.ref_x)
         ref_dy = np.gradient(self.ref_y)
         ref_mags = np.hypot(ref_dx, ref_dy)
@@ -384,12 +496,12 @@ class TrackEditor:
         ref_nx = -ref_dy / ref_mags
         ref_ny = ref_dx / ref_mags
 
-        new_x = self.x.copy()
-        new_y = self.y.copy()
+        new_x = active_t['x'].copy()
+        new_y = active_t['y'].copy()
 
         start_idx = 1 if fix_endpoints and not closed_loop else 0
-        end_idx = len(self.x) - 1 if fix_endpoints and not closed_loop else len(self.x)
-        num_pts = len(self.x)
+        end_idx = len(active_t['x']) - 1 if fix_endpoints and not closed_loop else len(active_t['x'])
+        num_pts = len(active_t['x'])
 
         for _ in range(iterations):
             temp_x = new_x.copy()
@@ -407,119 +519,110 @@ class TrackEditor:
                     next_i  = min(num_pts - 1, i + 1)
                     next2_i = min(num_pts - 1, i + 2)
                 
-                # 1. Minimum curvature relaxation target (Smoothness)
                 smooth_x = (-temp_x[prev2_i] + 4 * temp_x[prev_i] + 4 * temp_x[next_i] - temp_x[next2_i]) / 6.0
                 smooth_y = (-temp_y[prev2_i] + 4 * temp_y[prev_i] + 4 * temp_y[next_i] - temp_y[next2_i]) / 6.0
 
-                # 2. Shortest path target (Elastic Tension)
                 length_x = (temp_x[prev_i] + temp_x[next_i]) / 2.0
                 length_y = (temp_y[prev_i] + temp_y[next_i]) / 2.0
 
-                # Blend both targets based on their alphas
                 cand_x = temp_x[i] + alpha_smooth * (smooth_x - temp_x[i]) + alpha_length * (length_x - temp_x[i])
                 cand_y = temp_y[i] + alpha_smooth * (smooth_y - temp_y[i]) + alpha_length * (length_y - temp_y[i])
 
-                # Find closest point on reference line
                 dists = np.hypot(self.ref_x - cand_x, self.ref_y - cand_y)
                 closest_idx = np.argmin(dists)
 
-                # Compute maximum allowed displacement from centerline to satisfy wall margin
                 max_disp = (self.ref_widths[closest_idx] / 2.0) - self.wall_margin
                 max_disp = max(0.0, max_disp)
 
-                # Project candidate point onto reference track normal at closest_idx
                 vec_x = cand_x - self.ref_x[closest_idx]
                 vec_y = cand_y - self.ref_y[closest_idx]
                 disp = vec_x * ref_nx[closest_idx] + vec_y * ref_ny[closest_idx]
 
-                # Clamp displacement within allowable track wall bounds
                 clamped_disp = np.clip(disp, -max_disp, max_disp)
 
                 new_x[i] = self.ref_x[closest_idx] + clamped_disp * ref_nx[closest_idx]
                 new_y[i] = self.ref_y[closest_idx] + clamped_disp * ref_ny[closest_idx]
 
-        self.x = new_x
-        self.y = new_y
+        active_t['x'] = new_x
+        active_t['y'] = new_y
         
         self.clean_close_waypoints()
         self._refresh_visuals()
         print("Optimization complete!")
 
     def undo(self):
-        if not self.undo_stack:
+        active_t = self.tracks[self.active_track_idx]
+        if not active_t['undo_stack']:
+            print(f"Path {self.active_track_idx + 1}: Nothing to undo.")
             return
             
-        self.x, self.y = self.undo_stack.pop()
+        active_t['x'], active_t['y'] = active_t['undo_stack'].pop()
         self._refresh_visuals()
-        print(f"Undo successful. ({len(self.undo_stack)} steps remaining)")
+        print(f"Path {self.active_track_idx + 1}: Undo successful. ({len(active_t['undo_stack'])} steps remaining)")
 
     def save_data(self):
-        new_filename = f"output_{self.filename}"
-        save_path = os.path.join(os.path.dirname(self.target_filepath), new_filename)
-        
-        save_dict = self.original_dict.copy()
-        num_points = len(self.x)
-
-        if 'locations' in save_dict:
-            orig_shape = save_dict['locations'].shape
-            if orig_shape[1] == 3:
-                old_z = save_dict['locations'][:, 2] if len(save_dict['locations']) == num_points else np.zeros(num_points)
-                save_dict['locations'] = np.column_stack([self.x, self.y, old_z])
-            else:
-                save_dict['locations'] = np.column_stack([self.x, self.y])
-        elif self.load_mode == 'xy':
-            save_dict['x'] = self.x
-            save_dict['y'] = self.y
-        elif self.load_mode == 'waypoints':
-            save_dict['waypoints'] = np.column_stack([self.x, self.y])
-
-        if 'rotations' in save_dict:
-            # Calculate distances between points to get a cleaner vector
-            dx = np.gradient(self.x)
-            dy = np.gradient(self.y)
-            yaws = np.arctan2(dy, dx)
+        for idx, track in enumerate(self.tracks):
+            new_filename = f"output_dual_{track['filename']}"
+            save_path = os.path.join(os.path.dirname(track['filepath']), new_filename)
             
-            # Unwrap yaws to prevent jumps between pi and -pi
-            yaws = np.unwrap(yaws)
-            
-            # Apply a light moving average filter to smooth out heading jitters
-            kernel_size = 3
-            kernel = np.ones(kernel_size) / kernel_size
-            yaws_padded = np.pad(yaws, (kernel_size//2, kernel_size//2), mode='edge')
-            smoothed_yaws = np.convolve(yaws_padded, kernel, mode='valid')
-            
-            rot_shape = save_dict['rotations'].shape
-            if len(rot_shape) == 1 or (len(rot_shape) == 2 and rot_shape[1] == 1):
-                save_dict['rotations'] = smoothed_yaws
-            elif len(rot_shape) == 2 and rot_shape[1] >= 3:
-                new_rots = np.zeros((num_points, rot_shape[1]))
-                new_rots[:, -1] = smoothed_yaws
-                save_dict['rotations'] = new_rots
+            save_dict = track['original_dict'].copy()
+            num_points = len(track['x'])
 
-        if 'lane_widths' in save_dict:
-            save_dict['lane_widths'] = np.full(num_points, self.car_width)
+            if 'locations' in save_dict:
+                orig_shape = save_dict['locations'].shape
+                if orig_shape[1] == 3:
+                    old_z = save_dict['locations'][:, 2] if len(save_dict['locations']) == num_points else np.zeros(num_points)
+                    save_dict['locations'] = np.column_stack([track['x'], track['y'], old_z])
+                else:
+                    save_dict['locations'] = np.column_stack([track['x'], track['y']])
+            elif track['load_mode'] == 'xy':
+                save_dict['x'] = track['x']
+                save_dict['y'] = track['y']
+            elif track['load_mode'] == 'waypoints':
+                save_dict['waypoints'] = np.column_stack([track['x'], track['y']])
 
-        np.savez(save_path, **save_dict)
-        print(f"Saved modified file to: {save_path}")
-        print(f"Exported fields: {list(save_dict.keys())}")
-        
-        self.ax.set_title(f"SAVED TO:\n{new_filename}", color='green', fontweight='bold', fontsize=12)
+            if 'rotations' in save_dict:
+                dx = np.gradient(track['x'])
+                dy = np.gradient(track['y'])
+                yaws = np.arctan2(dy, dx)
+                yaws = np.unwrap(yaws)
+                
+                kernel_size = 3
+                kernel = np.ones(kernel_size) / kernel_size
+                yaws_padded = np.pad(yaws, (kernel_size//2, kernel_size//2), mode='edge')
+                smoothed_yaws = np.convolve(yaws_padded, kernel, mode='valid')
+                
+                rot_shape = save_dict['rotations'].shape
+                if len(rot_shape) == 1 or (len(rot_shape) == 2 and rot_shape[1] == 1):
+                    save_dict['rotations'] = smoothed_yaws
+                elif len(rot_shape) == 2 and rot_shape[1] >= 3:
+                    new_rots = np.zeros((num_points, rot_shape[1]))
+                    new_rots[:, -1] = smoothed_yaws
+                    save_dict['rotations'] = new_rots
+
+            if 'lane_widths' in save_dict:
+                save_dict['lane_widths'] = np.full(num_points, self.car_width)
+
+            np.savez(save_path, **save_dict)
+            print(f"Saved Path {idx + 1} to: {save_path}")
+            
+        self.ax.set_title("BOTH PATHS SAVED SUCCESSFULLY", color='green', fontweight='bold', fontsize=12)
         self.fig.canvas.draw_idle()
         
         timer = self.fig.canvas.new_timer(interval=2000)
         timer.add_callback(self._update_title)
         timer.start()
 
-
 if __name__ == "__main__":
     REFERENCE_TRACK = "competition_code/waypoints/Monza.npz"
-    EDITABLE_PATH = "competition_code/waypoints/output_output_waypointsPrimary1.npz"
+    EDITABLE_PATH_1 = "competition_code/waypoints/output_output_waypointsPrimary1.npz"
+    EDITABLE_PATH_2 = "competition_code/waypoints/waypointsPrimary.npz" 
     
-    if os.path.exists(REFERENCE_TRACK) and os.path.exists(EDITABLE_PATH):
+    if os.path.exists(REFERENCE_TRACK) and os.path.exists(EDITABLE_PATH_1) and os.path.exists(EDITABLE_PATH_2):
         print(f"Loading {REFERENCE_TRACK} as boundaries...")
-        print(f"Loading {EDITABLE_PATH} as editable racing line...")
-        editor = TrackEditor(REFERENCE_TRACK, EDITABLE_PATH, car_width=CAR_WIDTH, car_length=CAR_LENGTH, wall_margin=WALL_MARGIN)
+        print("Loading editable paths...")
+        editor = TrackEditor(REFERENCE_TRACK, EDITABLE_PATH_1, EDITABLE_PATH_2, car_width=CAR_WIDTH, car_length=CAR_LENGTH, wall_margin=WALL_MARGIN)
         plt.show()
     else:
-        print("Error: Could not find one or both of the required .npz files.")
-        print(f"Looking for: '{REFERENCE_TRACK}' and '{EDITABLE_PATH}'")
+        print("Error: Could not find required .npz files.")
+        print(f"Looking for:\n- {REFERENCE_TRACK}\n- {EDITABLE_PATH_1}\n- {EDITABLE_PATH_2}")

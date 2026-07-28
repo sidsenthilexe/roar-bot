@@ -11,6 +11,8 @@ from util.SpeedMap import SpeedMap
 from util.MathUtil import MathUtil
 from util.PIDController import PIDController
 from util.SteerController import SteerController
+from util.GenUtil import GenUtil
+import os
 
 def filter_waypoints(location : np.ndarray, current_idx: int, waypoints : List[roar_py_interface.RoarPyWaypoint]) -> int:
     def dist_to_waypoint(waypoint : roar_py_interface.RoarPyWaypoint):
@@ -45,6 +47,8 @@ class RoarCompetitionSolution:
     
     async def initialize(self) -> None:
         self.maneuverable_waypoints = roar_py_interface.RoarPyWaypoint.load_waypoint_list(np.load("waypoints/output_output_waypointsPrimary1.npz"))
+
+        #self.radii_data = GenUtil.load_file(os.path.join(os.path.dirname(__file__), "util","radii.txt"))
 
         vehicle_location = self.location_sensor.get_last_gym_observation()
 
@@ -130,6 +134,8 @@ class RoarCompetitionSolution:
             "reverse": 0,
             "target_gear": 0
         }
-        #print(f"Throttle: {throttle_normalized}, Target Speed: {target_speed}, Current Speed: {vehicle_velocity_norm}, Steer Control: {steer_control}, Target Heading: {target_steer}, Vehicle Heading: {current_steer}")
+        #print(f"Steer: {steer_normalized}")
+        #print(f"WP: {self.current_waypoint_idx}, Radius: {self.radii_data[self.current_waypoint_idx]}, Target: {target_speed:.3f}")
+        print(f"Throttle: {throttle_normalized}, Brake: {brake_normalized}, Target Speed: {target_speed}, Current Speed: {vehicle_velocity_norm}, Steer Control: {steer_control}")
         await self.vehicle.apply_action(control)
         return control
