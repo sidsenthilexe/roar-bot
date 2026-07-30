@@ -6,13 +6,10 @@ Please do not change anything else but fill out the to-do sections.
 from typing import List, Tuple, Dict, Optional
 import roar_py_interface
 import numpy as np
-import matplotlib.pyplot as plt
 from util.SpeedMap import SpeedMap
-from util.MathUtil import MathUtil
 from util.PIDController import PIDController
 from util.SteerController import SteerController
-from util.GenUtil import GenUtil
-import os
+from util.Tuner import Tuner
 
 def filter_waypoints(location : np.ndarray, current_idx: int, waypoints : List[roar_py_interface.RoarPyWaypoint]) -> int:
     def dist_to_waypoint(waypoint : roar_py_interface.RoarPyWaypoint):
@@ -46,9 +43,7 @@ class RoarCompetitionSolution:
         self.collision_sensor = collision_sensor
     
     async def initialize(self) -> None:
-        self.maneuverable_waypoints = roar_py_interface.RoarPyWaypoint.load_waypoint_list(np.load("waypoints/output_output_waypointsPrimary1.npz"))
-
-        #self.radii_data = GenUtil.load_file(os.path.join(os.path.dirname(__file__), "util","radii.txt"))
+        self.maneuverable_waypoints = roar_py_interface.RoarPyWaypoint.load_waypoint_list(np.load("waypoints/waypointsPrimary.npz"))
 
         vehicle_location = self.location_sensor.get_last_gym_observation()
 
@@ -59,25 +54,8 @@ class RoarCompetitionSolution:
             self.maneuverable_waypoints
         )
 
-        self.speed_controller = PIDController(1.0, 0.1, 0.1, 0.05)
-        self.steer_controller = PIDController(0.9, 0.0, 0.0, 0.05)
+        self.speed_controller = PIDController(0.9, 0.1, 0.1, 0.05)
 
-        plt.ion()
-        self.fig, self.ax = plt.subplots(figsize=(8, 4))
-        
-        self.time_steps = []
-        self.target_steers = []
-        self.current_steers = []
-        self.step_counter = 0
-
-        self.ax.set_ylim(-4, 4)
-
-        self.line_target, = self.ax.plot([], [], label="Target Steer", color="r", linestyle="--")
-        self.line_current, = self.ax.plot([], [], label="Current Steer", color="b")
-
-        self.ax.legend(loc="upper right")
-        self.ax.grid(True)
-        self.plots_out = 1
     async def step(
         self
     ) -> None:
@@ -92,50 +70,24 @@ class RoarCompetitionSolution:
             self.maneuverable_waypoints
         ) 
 
+        steer_control = SteerController.get_steer_control(vehicle_velocity_norm, self, vehicle_location, vehicle_rotation)
+
         target_speed = SpeedMap.get_target_speed(vehicle_velocity_norm, self)
+        target_speed = Tuner.tune_target_speed(target_speed)
 
         self.speed_controller.set_setpoint(target_speed)
         throttle_control = self.speed_controller.calculate(vehicle_velocity_norm)
         throttle_normalized = np.clip(throttle_control, 0.0, 1.0)
         brake_normalized = np.clip(-throttle_control, 0.0, 1.0)
 
-        target_steer = SteerController.get_target_heading(vehicle_velocity_norm, self, vehicle_location)
-        current_steer = MathUtil.normalize_rad(vehicle_rotation[2])
-        target_steer = MathUtil.normalize_continuous_target_rads(current_steer, target_steer)
-
-        self.steer_controller.set_setpoint(target_steer)
-        steer_control = self.steer_controller.calculate(current_steer)
-        steer_normalized = np.clip(-steer_control, -1.0, 1.0)
-
-        #throttle_normalized, brake_normalized, steer_control = MathUtil.clamp_inputs(throttle_normalized, brake_normalized, steer_control)
-
-        self.step_counter += 1
-        self.time_steps.append(self.step_counter)
-        self.target_steers.append(target_steer)
-        self.current_steers.append(current_steer)
-
-        self.line_target.set_data(self.time_steps, self.target_steers)
-        self.line_current.set_data(self.time_steps, self.current_steers)
-
-        self.ax.relim()
-        self.ax.autoscale_view()
-        self.ax.set_ylim(top=4, bottom=-4)
-
-        if self.step_counter % 2769 == 0:
-            name = "plot" + str(self.plots_out)
-            self.fig.savefig(name, dpi=300, bbox_inches='tight')
-            self.plots_out += 1
-
         control = {
             "throttle": throttle_normalized,
-            "steer": steer_normalized,
+            "steer": steer_control,
             "brake": brake_normalized,
             "hand_brake": 0,
             "reverse": 0,
             "target_gear": 0
         }
-        #print(f"Steer: {steer_normalized}")
-        #print(f"WP: {self.current_waypoint_idx}, Radius: {self.radii_data[self.current_waypoint_idx]}, Target: {target_speed:.3f}")
-        print(f"Throttle: {throttle_normalized}, Brake: {brake_normalized}, Target Speed: {target_speed}, Current Speed: {vehicle_velocity_norm}, Steer Control: {steer_control}")
+        print(f"Raw Throttle: {throttle_control}, Throttle: {throttle_normalized}, Target Speed: {target_speed}, Current Speed: {vehicle_velocity_norm}, Steer Control: {steer_control}")
         await self.vehicle.apply_action(control)
         return control

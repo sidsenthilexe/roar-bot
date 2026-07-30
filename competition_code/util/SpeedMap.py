@@ -5,25 +5,12 @@ class SpeedMap:
     
     @staticmethod
     def get_target_speed(velocity, vehicle):
-        waypoints = vehicle.maneuverable_waypoints
-        idx = vehicle.current_waypoint_idx
-        n = len(waypoints)
-        spd_look_ahead = np.clip(int(velocity * 0.4), 15, 35)
-        max_c = 1e-5
-        for i in range(spd_look_ahead):
-            w_0 = waypoints[(idx + i) % n]
-            w_1 = waypoints[(idx + i + 4) % n]
-            w_2 = waypoints[(idx + i + 8) % n]
-            curvature = WaypointCalculator.curvature(w_0, w_1, w_2)
-            if curvature > max_c:
-                max_c = curvature
-        print(f"Curvature: {max_c}")
-        return np.clip(4.5 * (max_c ** -0.45), 0.0, 100.0)
+        current_waypoint = vehicle.maneuverable_waypoints[vehicle.current_waypoint_idx]
+        spd_look_ahead = np.clip(int(velocity), 33, 53)
+        speed_wp = [vehicle.maneuverable_waypoints[(vehicle.current_waypoint_idx + spd_look_ahead) % len(vehicle.maneuverable_waypoints)], vehicle.maneuverable_waypoints[(vehicle.current_waypoint_idx + spd_look_ahead+20) % len(vehicle.maneuverable_waypoints)]]
+        curvature = WaypointCalculator.curvature(current_waypoint, speed_wp[0], speed_wp[1])
+        return np.clip(7.62945* ((curvature)**-0.300321), 0.0, 100.0)
 
-    #spd_look_ahead = np.clip(int(velocity * 0.4), 15, 35)
-            #radii = [vehicle.radii_data[(vehicle.current_waypoint_idx + i) % len(vehicle.radii_data)] for i in range(spd_look_ahead)]
-            #radius = np.percentile(radii, 20)
-            #return np.clip(12 * (radius ** 0.28), 0, 100)
 
     # @staticmethod
     # def get_target_old(curvature):
