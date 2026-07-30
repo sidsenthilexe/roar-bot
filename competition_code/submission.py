@@ -92,6 +92,8 @@ class RoarCompetitionSolution:
             self.maneuverable_waypoints
         ) 
 
+        print(f"CURRENT: {self.current_waypoint_idx}, SPEED: {vehicle_velocity_norm}")
+
         target_speed = SpeedMap.get_target_speed(vehicle_velocity_norm, self)
         target_speed = Tuner.tune_target_speed(target_speed, self.current_waypoint_idx)
 
