@@ -93,8 +93,8 @@ class RoarCompetitionSolution:
         ) 
 
         target_speed = SpeedMap.get_target_speed(vehicle_velocity_norm, self)
-        if (target_speed > 40): target_speed += 4
-        if (target_speed > 35): target_speed += 3
+
+        if (target_speed > 35): target_speed *= 8/7
 
         self.speed_controller.set_setpoint(target_speed)
         throttle_control = self.speed_controller.calculate(vehicle_velocity_norm)
