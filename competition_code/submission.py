@@ -12,7 +12,7 @@ from util.MathUtil import MathUtil
 from util.PIDController import PIDController
 from util.SteerController import SteerController
 from util.GenUtil import GenUtil
-import os
+from util.Tuner import Tuner
 
 def filter_waypoints(location : np.ndarray, current_idx: int, waypoints : List[roar_py_interface.RoarPyWaypoint]) -> int:
     def dist_to_waypoint(waypoint : roar_py_interface.RoarPyWaypoint):
@@ -93,8 +93,7 @@ class RoarCompetitionSolution:
         ) 
 
         target_speed = SpeedMap.get_target_speed(vehicle_velocity_norm, self)
-
-        if (target_speed > 35): target_speed *= 38/35
+        target_speed = Tuner.tune_target_speed(target_speed, self.current_waypoint_idx)
 
         self.speed_controller.set_setpoint(target_speed)
         throttle_control = self.speed_controller.calculate(vehicle_velocity_norm)
@@ -138,6 +137,6 @@ class RoarCompetitionSolution:
         }
         #print(f"Steer: {steer_normalized}")
         #print(f"WP: {self.current_waypoint_idx}, Radius: {self.radii_data[self.current_waypoint_idx]}, Target: {target_speed:.3f}")
-        print(f"Throttle: {throttle_normalized}, Brake: {brake_normalized}, Target Speed: {target_speed}, Current Speed: {vehicle_velocity_norm}, Steer Control: {steer_control}")
+        #print(f"Throttle: {throttle_normalized}, Brake: {brake_normalized}, Target Speed: {target_speed}, Current Speed: {vehicle_velocity_norm}, Steer Control: {steer_control}")
         await self.vehicle.apply_action(control)
         return control
