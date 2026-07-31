@@ -30,6 +30,6 @@ class Plotter:
         self.ax.autoscale_view()
         self.ax.set_ylim(top=self.y_lim[1], bottom=self.y_lim[0])
         if self.step_counter % self.limit == 0:
-            name = "plot" + self.name
+            name = "plot" + self.name + str(self.plots_out)
             self.fig.savefig(name, dpi=300, bbox_inches='tight')
             self.plots_out += 1
