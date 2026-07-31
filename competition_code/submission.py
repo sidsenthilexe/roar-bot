@@ -12,6 +12,7 @@ from util.MathUtil import MathUtil
 from util.PIDController import PIDController
 from util.SteerController import SteerController
 from util.Tuner import Tuner
+from util.Plotter import Plotter
 
 def filter_waypoints(location : np.ndarray, current_idx: int, waypoints : List[roar_py_interface.RoarPyWaypoint]) -> int:
     def dist_to_waypoint(waypoint : roar_py_interface.RoarPyWaypoint):
@@ -59,22 +60,9 @@ class RoarCompetitionSolution:
         self.speed_controller = PIDController(1.0, 0.1, 0.1, 0.05)
         self.steer_controller = PIDController(0.9, 0.0, 0.0, 0.05)
 
-        plt.ion()
-        self.fig, self.ax = plt.subplots(figsize=(8, 4))
-        
-        self.time_steps = []
-        self.target_steers = []
-        self.current_steers = []
-        self.step_counter = 0
+        self.speeds_plot = Plotter([], [], [], "Speeds", "Target Speed", "Current Speed", [8, 4], [0, 100], 2769)
+        self.steers_plot = Plotter([], [], [], "Steers", "Target Steer", "Current Steer", [8, 4], [-4, 4], 2769)
 
-        self.ax.set_ylim(-4, 4)
-
-        self.line_target, = self.ax.plot([], [], label="Target Steer", color="r", linestyle="--")
-        self.line_current, = self.ax.plot([], [], label="Current Steer", color="b")
-
-        self.ax.legend(loc="upper right")
-        self.ax.grid(True)
-        self.plots_out = 1
     async def step(
         self
     ) -> None:
@@ -109,22 +97,8 @@ class RoarCompetitionSolution:
 
         #throttle_normalized, brake_normalized, steer_control = MathUtil.clamp_inputs(throttle_normalized, brake_normalized, steer_control)
 
-        self.step_counter += 1
-        self.time_steps.append(self.step_counter)
-        self.target_steers.append(target_steer)
-        self.current_steers.append(current_steer)
-
-        self.line_target.set_data(self.time_steps, self.target_steers)
-        self.line_current.set_data(self.time_steps, self.current_steers)
-
-        self.ax.relim()
-        self.ax.autoscale_view()
-        self.ax.set_ylim(top=4, bottom=-4)
-
-        if self.step_counter % 2769 == 0:
-            name = "plot" + str(self.plots_out)
-            self.fig.savefig(name, dpi=300, bbox_inches='tight')
-            self.plots_out += 1
+        self.speeds_plot.generate(target_speed, vehicle_velocity_norm)
+        self.steers_plot.generate(target_steer, current_steer)
 
         control = {
             "throttle": throttle_normalized,
