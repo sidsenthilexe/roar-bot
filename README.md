@@ -53,3 +53,6 @@ To run the simulation, first ensure that `CarlaUE4.exe` is still running, and th
 ```
 python competition_runner.py
 ```
+
+#### AI Declaration
+AI was used for auxiliary purposes only, such as `plot_waypoints.py` which allowed us to more coveniently edit the `.npz` waypoint files.
