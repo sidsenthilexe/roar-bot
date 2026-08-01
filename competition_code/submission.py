@@ -77,9 +77,6 @@ class RoarCompetitionSolution:
             self.current_waypoint_idx,
             self.maneuverable_waypoints
         ) 
-
-        print(f"CURRENT: {self.current_waypoint_idx}, SPEED: {vehicle_velocity_norm}")
-
         target_speed = SpeedMap.get_target_speed(vehicle_velocity_norm, self)
         target_speed = Tuner.tune_target_speed(target_speed, self.current_waypoint_idx)
 
@@ -111,6 +108,9 @@ class RoarCompetitionSolution:
             "reverse": 0,
             "target_gear": 0
         }
+
+        print(f"CURRENT: {self.current_waypoint_idx}, SPEED: {vehicle_velocity_norm}, TARGET: {target_speed}, THROTTLE: {throttle_normalized}, BRAKE: {brake_normalized}, STEER: {steer_normalized}")
+
         #print(f"Steer: {steer_normalized}")
         #print(f"WP: {self.current_waypoint_idx}, Radius: {self.radii_data[self.current_waypoint_idx]}, Target: {target_speed:.3f}")
         #print(f"Throttle: {throttle_normalized}, Brake: {brake_normalized}, Target Speed: {target_speed}, Current Speed: {vehicle_velocity_norm}, Steer Control: {steer_control}")

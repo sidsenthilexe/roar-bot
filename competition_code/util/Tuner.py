@@ -8,8 +8,9 @@ class Tuner:
         return target_speed * 44/35
 
     def decide_steer_pid(vel):
-        if (vel < 35): return 1.0
-        return 1.1
+        if (vel < 25): return 1.1
+        if (vel < 35): return 1.3
+        return 1.5
     
     
     
