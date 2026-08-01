@@ -3,7 +3,7 @@
 ## A bot to autonomously control a vehicle in the [CARLA simulator](https://carla.org/)
 This program was written in Python, and is being designed to race on UC Berkeley's [Monza Map](https://roar.berkeley.edu/monza-map/), published by [Berkeley ROAR Racing](https://roar.berkeley.edu/).  
 
-The current iteration of the bot completes 3 laps of the Monza circuit in 338.85s
+The current iteration of the bot completes 3 laps of the Monza circuit in 335.85s
 
 ## Setup
 The CARLA simulator is meant to run on Windows, as are these installation instructions
