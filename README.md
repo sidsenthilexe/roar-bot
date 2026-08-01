@@ -1,4 +1,4 @@
-<sub>Forked from [augcog/ROAR_Competition](https://github.com/augcog/ROAR_Competition)</sub>
+<sub>Initial fork from [augcog/ROAR_Competition](https://github.com/augcog/ROAR_Competition)</sub>
 # roar-bot
 ## A bot to autonomously control a vehicle in the [CARLA simulator](https://carla.org/)
 This program was written in Python, and is being designed to race on UC Berkeley's [Monza Map](https://roar.berkeley.edu/monza-map/), published by [Berkeley ROAR Racing](https://roar.berkeley.edu/).  

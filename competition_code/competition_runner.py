@@ -77,8 +77,7 @@ class RoarCompetitionRule:
         
         self.furthest_waypoints_index += min_index #= new_furthest_index
         self._last_vehicle_location = current_location
-        print(f"reach waypoints {self.furthest_waypoints_index}")
-        # at {self.waypoints[self.furthest_waypoints_index].location}")
+        print(f"reach waypoints {self.furthest_waypoints_index} at {self.waypoints[self.furthest_waypoints_index].location}")
 
     
     async def respawn(
@@ -226,7 +225,7 @@ async def evaluate_solution(
     }
 
 async def main():
-    carla_client = carla.Client('host.docker.internal', 2000)
+    carla_client = carla.Client('127.0.0.1', 2000)
     carla_client.set_timeout(5.0)
     roar_py_instance = roar_py_carla.RoarPyCarlaInstance(carla_client)
     world = roar_py_instance.world
