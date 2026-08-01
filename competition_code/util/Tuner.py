@@ -6,6 +6,10 @@ class Tuner:
         elif (waypoint >= 2550): return target_speed 
         elif (450 <= waypoint <= 510): return min(target_speed, 34.9)
         return target_speed * 44/35
+
+    def decide_steer_pid(vel):
+        if (vel < 35): return 0.9
+        return 1.0
     
     
     
