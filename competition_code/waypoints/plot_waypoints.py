@@ -1,6 +1,7 @@
 import numpy as np
 import matplotlib.pyplot as plt
 from matplotlib.collections import LineCollection
+from matplotlib.patches import Rectangle
 import os
 
 # ==========================================
@@ -10,6 +11,9 @@ CAR_WIDTH = 2.1634500027          # Width of the car in meters
 CAR_LENGTH = 4.7917795181         # Length of the car in meters
 WALL_MARGIN = 2.0                 # Minimum distance to keep from track walls
 MIN_WAYPOINT_DIST = 0.2           # Minimum allowed distance between consecutive waypoints in meters
+TRANSLATE_STEP = 0.5              # Distance (in meters) to move selected waypoints per arrow key press
+ROTATE_STEP = 2.0                 # Degrees to rotate selected waypoints per key press ('[' or ']')
+ROTATION_PIVOT = 'bottom'         # Point to rotate around. Options: 'center', 'top', 'bottom'
 # ==========================================
 
 class TrackEditor:
@@ -24,6 +28,10 @@ class TrackEditor:
         self.show_car_boxes = False
         self.current_mouse_event = None
         self.active_track_idx = 0 # 0 for Path 1, 1 for Path 2
+        
+        # Selection tools
+        self.selected_indices = []
+        self.selection_start = None
         
         # 1. Load Reference Data
         self.ref_x, self.ref_y, self.ref_widths, *_ = self._load_npz(reference_filepath)
@@ -54,7 +62,7 @@ class TrackEditor:
         self.lines = [self.line1, self.line2]
         self.scatters = [self.scatter1, self.scatter2]
 
-        # Car Boxes (Only shown for the ACTIVE track to prevent clutter)
+        # Car Boxes
         car_widths_array = np.full_like(self.tracks[0]['x'], self.car_width)
         car_segments = self._calculate_perpendicular_segments(self.tracks[0]['x'], self.tracks[0]['y'], car_widths_array)
         self.car_lines = LineCollection(car_segments, colors='green', linewidths=2.0, alpha=0.8, zorder=3)
@@ -64,6 +72,10 @@ class TrackEditor:
         self.car_boxes = LineCollection(car_box_segments, colors='magenta', linewidths=1.0, alpha=0.6, zorder=3.5)
         self.car_boxes.set_visible(self.show_car_boxes)
         self.ax.add_collection(self.car_boxes)
+
+        # Selection Box
+        self.selection_rect = Rectangle((0, 0), 1, 1, fill=True, color='yellow', alpha=0.2, linestyle='--', edgecolor='black', visible=False, zorder=10)
+        self.ax.add_patch(self.selection_rect)
 
         self._update_scatter_points()
         
@@ -110,6 +122,12 @@ class TrackEditor:
             if len(x) > 0:
                 colors[0] = 'green'
                 colors[-1] = 'orange'
+                
+            # Highlight selected points for the active track
+            if idx == self.active_track_idx:
+                for s_idx in self.selected_indices:
+                    if s_idx < len(colors):
+                        colors[s_idx] = 'yellow'
             
             sizes = [15] * len(x)
             if len(x) > 0:
@@ -134,11 +152,10 @@ class TrackEditor:
         mode_str = "Middle" if self.edit_mode == 'inner' else "Start/End"
         active_t = self.tracks[self.active_track_idx]
         lap_len = self._calculate_lap_length(self.active_track_idx)
-        box_str = "ON" if self.show_car_boxes else "OFF"
         
         title_text = (
             f"Active: PATH {self.active_track_idx + 1} ({active_t['filename']}) | Mode: {mode_str} | Dist: {lap_len:.2f} m\n"
-            f"'1'/'2'=Switch | 't'=Toggle | 'd'=Del | 'e'=Clean | 'b'=Box | 's'=Save | 'g'=Radii | 'z'=Undo | 'o'/'p'=Opt"
+            f"Arrows=Move | [/]=Rotate | d=Del | e=Clean | b=Box | z=Undo | o/p=Opt"
         )
         self.ax.set_title(title_text, fontsize=9.5, color='black', fontweight='normal')
         self.fig.canvas.draw_idle()
@@ -276,6 +293,10 @@ class TrackEditor:
         if removed_count > 0:
             active_t['x'] = x[keep_indices]
             active_t['y'] = y[keep_indices]
+            
+            # Clear selected indices as array structure changed
+            self.selected_indices = []
+            
             print(f"Path {self.active_track_idx + 1}: Cleaned up {removed_count} waypoints closer than {min_distance}m!")
             self._refresh_visuals()
 
@@ -329,6 +350,9 @@ class TrackEditor:
         active_t['x'] = np.delete(active_t['x'], idx)
         active_t['y'] = np.delete(active_t['y'], idx)
         
+        # Clear selected indices since the array shape changed
+        self.selected_indices = []
+        
         print(f"Path {self.active_track_idx + 1}: Deleted waypoint {idx}. ({len(active_t['x'])} waypoints remaining)")
         self._refresh_visuals()
 
@@ -366,44 +390,112 @@ class TrackEditor:
             return
         
         self._ind = self.get_closest_point(event)
+        
         if self._ind is not None:
+            # Clicked on a point - start standard drag
             self.push_undo()
             self._dragging = True
+            
+            # If the user clicks a point not in selection, clear selection
+            if self._ind not in self.selected_indices:
+                self.selected_indices = []
+                self._refresh_visuals()
+        else:
+            # Clicked on empty space - clear selection and start box drag
+            self.selected_indices = []
+            self.selection_start = (event.xdata, event.ydata)
+            self.selection_rect.set_xy(self.selection_start)
+            self.selection_rect.set_width(0)
+            self.selection_rect.set_height(0)
+            self.selection_rect.set_visible(True)
+            self._refresh_visuals()
 
     def on_motion(self, event):
         self.current_mouse_event = event
-        if not self._dragging or self._ind is None or event.inaxes != self.ax: 
+        if event.inaxes != self.ax: 
             return
         
-        active_t = self.tracks[self.active_track_idx]
-        active_t['x'][self._ind] = event.xdata
-        active_t['y'][self._ind] = event.ydata
-        self._refresh_visuals()
+        # Handle dragging a single point
+        if self._dragging and self._ind is not None:
+            active_t = self.tracks[self.active_track_idx]
+            active_t['x'][self._ind] = event.xdata
+            active_t['y'][self._ind] = event.ydata
+            self._refresh_visuals()
+            
+        # Handle box selection dragging
+        elif self.selection_start is not None and event.xdata is not None and event.ydata is not None:
+            x0, y0 = self.selection_start
+            x1, y1 = event.xdata, event.ydata
+            
+            self.selection_rect.set_xy((min(x0, x1), min(y0, y1)))
+            self.selection_rect.set_width(abs(x1 - x0))
+            self.selection_rect.set_height(abs(y1 - y0))
+            self.fig.canvas.draw_idle()
 
     def on_release(self, event):
-        self._dragging = False
-        self._ind = None
+        if self._dragging:
+            self._dragging = False
+            self._ind = None
+        elif self.selection_start is not None and event.xdata is not None and event.ydata is not None:
+            # Finalize box selection
+            x0, y0 = self.selection_start
+            x1, y1 = event.xdata, event.ydata
+            xmin, xmax = min(x0, x1), max(x0, x1)
+            ymin, ymax = min(y0, y1), max(y0, y1)
+            
+            active_t = self.tracks[self.active_track_idx]
+            x_pts, y_pts = active_t['x'], active_t['y']
+            
+            for i in range(len(x_pts)):
+                if xmin <= x_pts[i] <= xmax and ymin <= y_pts[i] <= ymax:
+                    self.selected_indices.append(i)
+            
+            self.selection_start = None
+            self.selection_rect.set_visible(False)
+            
+            if self.selected_indices:
+                print(f"Path {self.active_track_idx + 1}: Selected {len(self.selected_indices)} waypoints.")
+            self._refresh_visuals()
+        else:
+            # Fallback if dragging exited bounds
+            self.selection_start = None
+            self.selection_rect.set_visible(False)
+            self._refresh_visuals()
 
     def on_key(self, event):
+        # Base keyboard shortcuts
         if event.key == '1':
             self.active_track_idx = 0
+            self.selected_indices = [] # Clear selection on switch
             self._refresh_visuals()
             print("Switched to Path 1")
         elif event.key == '2':
             self.active_track_idx = 1
+            self.selected_indices = [] # Clear selection on switch
             self._refresh_visuals()
             print("Switched to Path 2")
         elif event.key == 's':
             self.save_data()
         elif event.key == 'e':
-            self.push_undo()
-            self.clean_close_waypoints()
+            # Note: 'e' now only cleans if no selection (rotation moved to [/]).
+            if not self.selected_indices:
+                self.push_undo()
+                self.clean_close_waypoints()
         elif event.key == 'g':
             self.calculate_and_save_radii()
         elif event.key in ['d', 'delete', 'backspace']:
             target_idx = self.get_closest_point(self.current_mouse_event, ignore_mode=True)
             if target_idx is not None:
                 self.delete_waypoint(target_idx)
+            elif self.selected_indices:
+                # Optional: Handle batch deletion if waypoints are selected
+                self.push_undo()
+                active_t = self.tracks[self.active_track_idx]
+                active_t['x'] = np.delete(active_t['x'], self.selected_indices)
+                active_t['y'] = np.delete(active_t['y'], self.selected_indices)
+                print(f"Path {self.active_track_idx + 1}: Deleted {len(self.selected_indices)} selected waypoints.")
+                self.selected_indices = []
+                self._refresh_visuals()
             else:
                 print("Hover over a waypoint on the active path to delete it.")
         elif event.key == 'z' or event.key == 'ctrl+z':
@@ -415,10 +507,68 @@ class TrackEditor:
             self.show_car_boxes = not self.show_car_boxes
             self.car_boxes.set_visible(self.show_car_boxes)
             self._refresh_visuals()
+        elif event.key == 'escape':
+            self.selected_indices = []
+            self._refresh_visuals()
         elif event.key == 'o':
             self.optimize_racing_line(fix_endpoints=False, closed_loop=False)
         elif event.key == 'p':
             self.optimize_racing_line(fix_endpoints=False, closed_loop=True)
+
+        # Translation controls (Arrow Keys)
+        elif event.key in ['up', 'down', 'left', 'right'] and self.selected_indices:
+            self.push_undo()
+            active_t = self.tracks[self.active_track_idx]
+            
+            dx, dy = 0.0, 0.0
+            if event.key == 'up':
+                dy = TRANSLATE_STEP
+            elif event.key == 'down':
+                dy = -TRANSLATE_STEP
+            elif event.key == 'left':
+                dx = -TRANSLATE_STEP
+            elif event.key == 'right':
+                dx = TRANSLATE_STEP
+                
+            active_t['x'][self.selected_indices] += dx
+            active_t['y'][self.selected_indices] += dy
+            self._refresh_visuals()
+
+        # Rotation Controls ([/])
+        elif event.key in ['[', ']'] and self.selected_indices:
+            self.push_undo()
+            active_t = self.tracks[self.active_track_idx]
+            
+            # Convert degrees to radians ([ = counter-clockwise, ] = clockwise)
+            theta = np.radians(ROTATE_STEP) if event.key == '[' else np.radians(-ROTATE_STEP)
+            
+            x_sel = active_t['x'][self.selected_indices]
+            y_sel = active_t['y'][self.selected_indices]
+            
+            # Determine rotation pivot based on configuration
+            if ROTATION_PIVOT == 'top':
+                cx = np.mean(x_sel)
+                cy = np.max(y_sel)
+            elif ROTATION_PIVOT == 'bottom':
+                cx = np.mean(x_sel)
+                cy = np.min(y_sel)
+            else: # 'center' or fallback
+                cx = np.mean(x_sel)
+                cy = np.mean(y_sel)
+            
+            # Translate points to origin based on pivot
+            dx = x_sel - cx
+            dy = y_sel - cy
+            
+            # Apply 2D rotation matrix
+            new_x = dx * np.cos(theta) - dy * np.sin(theta)
+            new_y = dx * np.sin(theta) + dy * np.cos(theta)
+            
+            # Translate back
+            active_t['x'][self.selected_indices] = new_x + cx
+            active_t['y'][self.selected_indices] = new_y + cy
+            
+            self._refresh_visuals()
 
     def calculate_and_save_radii(self):
         active_t = self.tracks[self.active_track_idx]
@@ -557,56 +707,60 @@ class TrackEditor:
             return
             
         active_t['x'], active_t['y'] = active_t['undo_stack'].pop()
+        
+        # Clear selected indices just in case the undo changes array size or shifts points drastically
+        self.selected_indices = []
+        
         self._refresh_visuals()
         print(f"Path {self.active_track_idx + 1}: Undo successful. ({len(active_t['undo_stack'])} steps remaining)")
 
     def save_data(self):
-        for idx, track in enumerate(self.tracks):
-            new_filename = f"output_dual_{track['filename']}"
-            save_path = os.path.join(os.path.dirname(track['filepath']), new_filename)
+        track = self.tracks[self.active_track_idx]
+        new_filename = f"output_{track['filename']}"
+        save_path = os.path.join(os.path.dirname(track['filepath']), new_filename)
+        
+        save_dict = track['original_dict'].copy()
+        num_points = len(track['x'])
+
+        if 'locations' in save_dict:
+            orig_shape = save_dict['locations'].shape
+            if orig_shape[1] == 3:
+                old_z = save_dict['locations'][:, 2] if len(save_dict['locations']) == num_points else np.zeros(num_points)
+                save_dict['locations'] = np.column_stack([track['x'], track['y'], old_z])
+            else:
+                save_dict['locations'] = np.column_stack([track['x'], track['y']])
+        elif track['load_mode'] == 'xy':
+            save_dict['x'] = track['x']
+            save_dict['y'] = track['y']
+        elif track['load_mode'] == 'waypoints':
+            save_dict['waypoints'] = np.column_stack([track['x'], track['y']])
+
+        if 'rotations' in save_dict:
+            dx = np.gradient(track['x'])
+            dy = np.gradient(track['y'])
+            yaws = np.arctan2(dy, dx)
+            yaws = np.unwrap(yaws)
             
-            save_dict = track['original_dict'].copy()
-            num_points = len(track['x'])
-
-            if 'locations' in save_dict:
-                orig_shape = save_dict['locations'].shape
-                if orig_shape[1] == 3:
-                    old_z = save_dict['locations'][:, 2] if len(save_dict['locations']) == num_points else np.zeros(num_points)
-                    save_dict['locations'] = np.column_stack([track['x'], track['y'], old_z])
-                else:
-                    save_dict['locations'] = np.column_stack([track['x'], track['y']])
-            elif track['load_mode'] == 'xy':
-                save_dict['x'] = track['x']
-                save_dict['y'] = track['y']
-            elif track['load_mode'] == 'waypoints':
-                save_dict['waypoints'] = np.column_stack([track['x'], track['y']])
-
-            if 'rotations' in save_dict:
-                dx = np.gradient(track['x'])
-                dy = np.gradient(track['y'])
-                yaws = np.arctan2(dy, dx)
-                yaws = np.unwrap(yaws)
-                
-                kernel_size = 3
-                kernel = np.ones(kernel_size) / kernel_size
-                yaws_padded = np.pad(yaws, (kernel_size//2, kernel_size//2), mode='edge')
-                smoothed_yaws = np.convolve(yaws_padded, kernel, mode='valid')
-                
-                rot_shape = save_dict['rotations'].shape
-                if len(rot_shape) == 1 or (len(rot_shape) == 2 and rot_shape[1] == 1):
-                    save_dict['rotations'] = smoothed_yaws
-                elif len(rot_shape) == 2 and rot_shape[1] >= 3:
-                    new_rots = np.zeros((num_points, rot_shape[1]))
-                    new_rots[:, -1] = smoothed_yaws
-                    save_dict['rotations'] = new_rots
-
-            if 'lane_widths' in save_dict:
-                save_dict['lane_widths'] = np.full(num_points, self.car_width)
-
-            np.savez(save_path, **save_dict)
-            print(f"Saved Path {idx + 1} to: {save_path}")
+            kernel_size = 3
+            kernel = np.ones(kernel_size) / kernel_size
+            yaws_padded = np.pad(yaws, (kernel_size//2, kernel_size//2), mode='edge')
+            smoothed_yaws = np.convolve(yaws_padded, kernel, mode='valid')
             
-        self.ax.set_title("BOTH PATHS SAVED SUCCESSFULLY", color='green', fontweight='bold', fontsize=12)
+            rot_shape = save_dict['rotations'].shape
+            if len(rot_shape) == 1 or (len(rot_shape) == 2 and rot_shape[1] == 1):
+                save_dict['rotations'] = smoothed_yaws
+            elif len(rot_shape) == 2 and rot_shape[1] >= 3:
+                new_rots = np.zeros((num_points, rot_shape[1]))
+                new_rots[:, -1] = smoothed_yaws
+                save_dict['rotations'] = new_rots
+
+        if 'lane_widths' in save_dict:
+            save_dict['lane_widths'] = np.full(num_points, self.car_width)
+
+        np.savez(save_path, **save_dict)
+        print(f"Saved Active Path ({self.active_track_idx + 1}) to: {save_path}")
+        
+        self.ax.set_title(f"PATH {self.active_track_idx + 1} SAVED SUCCESSFULLY", color='green', fontweight='bold', fontsize=12)
         self.fig.canvas.draw_idle()
         
         timer = self.fig.canvas.new_timer(interval=2000)
@@ -615,8 +769,8 @@ class TrackEditor:
 
 if __name__ == "__main__":
     REFERENCE_TRACK = "competition_code/waypoints/Monza.npz"
-    EDITABLE_PATH_1 = "competition_code/waypoints/output_output_waypointsPrimary1.npz"
-    EDITABLE_PATH_2 = "competition_code/waypoints/waypointsPrimary.npz" 
+    EDITABLE_PATH_1 = "competition_code/waypoints/output_theWaypoints.npz"
+    EDITABLE_PATH_2 = "competition_code/waypoints/output_theWaypoints.npz" 
     
     if os.path.exists(REFERENCE_TRACK) and os.path.exists(EDITABLE_PATH_1) and os.path.exists(EDITABLE_PATH_2):
         print(f"Loading {REFERENCE_TRACK} as boundaries...")

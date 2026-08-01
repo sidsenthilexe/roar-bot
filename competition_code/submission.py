@@ -46,7 +46,7 @@ class RoarCompetitionSolution:
         self.collision_sensor = collision_sensor
     
     async def initialize(self) -> None:
-        self.maneuverable_waypoints = roar_py_interface.RoarPyWaypoint.load_waypoint_list(np.load("waypoints/theWaypoints.npz"))
+        self.maneuverable_waypoints = roar_py_interface.RoarPyWaypoint.load_waypoint_list(np.load("waypoints/output_theWaypoints.npz"))
 
         vehicle_location = self.location_sensor.get_last_gym_observation()
 
@@ -85,7 +85,7 @@ class RoarCompetitionSolution:
         throttle_normalized = np.clip(throttle_control, 0.0, 1.0)
         brake_normalized = np.clip(-throttle_control, 0.0, 1.0)
 
-        self.steer_controller.kp = Tuner.decide_steer_pid(target_speed)
+        self.steer_controller.kp = Tuner.tune_steer_kP(target_speed)
 
         target_steer = SteerController.get_target_heading(vehicle_velocity_norm, self, vehicle_location)
         current_steer = MathUtil.normalize_rad(vehicle_rotation[2])
