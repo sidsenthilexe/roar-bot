@@ -12,6 +12,10 @@ Notable features include PID control for throttle and steering, curvature calcul
 ## Setup
 The CARLA simulator is meant to run on Windows, as are these installation instructions
 
+### Prerequisites that will be installed
+* Monza Map (Simulator)
+* ROAR_PY (Berkeley Requisite Libraries)
+
 ### Installing Anaconda
 * Go to the [Anaconda download page](https://www.anaconda.com/download/success?reg=skipped).
 * Download `Anaconda Distribution` for Windows.
