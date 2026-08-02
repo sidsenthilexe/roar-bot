@@ -51,7 +51,7 @@ python -c "import carla, roar_py_interface, roar_py_carla; print('packages insta
 ```
 cd C:\ROAR
 git clone https://github.com/sidsenthilexe/roar-bot.git
-cd roar_bot\competition_code
+cd roar-bot\competition_code
 ```
 To run the simulation, first ensure that `CarlaUE4.exe` is still running, and then run
 ```
