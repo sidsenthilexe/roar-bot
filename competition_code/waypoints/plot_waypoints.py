@@ -769,7 +769,7 @@ class TrackEditor:
 
 if __name__ == "__main__":
     REFERENCE_TRACK = "competition_code/waypoints/Monza.npz"
-    EDITABLE_PATH_1 = "competition_code/waypoints/output_theWaypoints.npz"
+    EDITABLE_PATH_1 = "competition_code/waypoints/waypointsPrimary.npz"
     EDITABLE_PATH_2 = "competition_code/waypoints/output_theWaypoints.npz" 
     
     if os.path.exists(REFERENCE_TRACK) and os.path.exists(EDITABLE_PATH_1) and os.path.exists(EDITABLE_PATH_2):
