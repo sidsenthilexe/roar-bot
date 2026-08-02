@@ -44,7 +44,7 @@ pip install -e .
 ```
 * Test if packages are installed correctly. If they are, "`packages installed correctly`" should get printed:
 ```
-python -c "import carla, roar_py_interface, roar_py_carla; print("packages installed correctly")"
+python -c "import carla, roar_py_interface, roar_py_carla; print('packages installed correctly')"
 ```
 
 #### Install the Bot and run it
