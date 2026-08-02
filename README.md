@@ -38,9 +38,9 @@ git clone https://github.com/augcog/ROAR_PY.git
 cd ROAR_PY
 pip install -r requirements.txt
 cd roar_py_core
-pip install -e
+pip install -e .
 cd ..\roar_py_carla
-pip install -e
+pip install -e .
 ```
 * Test if packages are installed correctly. If they are, "`packages installed correctly`" should get printed:
 ```
