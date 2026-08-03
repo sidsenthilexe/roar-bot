@@ -98,6 +98,9 @@ class TrackEditor:
         self.fig.canvas.mpl_connect('key_press_event', self.on_key)
         self.fig.canvas.mpl_connect('scroll_event', self.on_scroll) 
 
+        # 8. Clipboard for splicing
+        self.clipboard = None
+
     def _init_track_data(self, filepath):
         target_data = self._load_npz(filepath, keep_original=True)
         self.tracks.append({
@@ -155,7 +158,7 @@ class TrackEditor:
         
         title_text = (
             f"Active: PATH {self.active_track_idx + 1} ({active_t['filename']}) | Mode: {mode_str} | Dist: {lap_len:.2f} m\n"
-            f"Arrows=Move | [/]=Rotate | d=Del | e=Clean | b=Box | z=Undo | o/p=Opt"
+            f"Arrows=Move | [/]=Rot | c/v=Copy/Paste | d=Del | e=Clean | b=Box | z=Undo | o/p=Opt"
         )
         self.ax.set_title(title_text, fontsize=9.5, color='black', fontweight='normal')
         self.fig.canvas.draw_idle()
@@ -312,6 +315,7 @@ class TrackEditor:
         
         if ignore_mode:
             distances = np.hypot(x - event.xdata, y - event.ydata)
+            if len(distances) == 0: return None
             closest_idx = np.argmin(distances)
             if distances[closest_idx] < threshold:
                 return closest_idx
@@ -477,7 +481,6 @@ class TrackEditor:
         elif event.key == 's':
             self.save_data()
         elif event.key == 'e':
-            # Note: 'e' now only cleans if no selection (rotation moved to [/]).
             if not self.selected_indices:
                 self.push_undo()
                 self.clean_close_waypoints()
@@ -488,7 +491,6 @@ class TrackEditor:
             if target_idx is not None:
                 self.delete_waypoint(target_idx)
             elif self.selected_indices:
-                # Optional: Handle batch deletion if waypoints are selected
                 self.push_undo()
                 active_t = self.tracks[self.active_track_idx]
                 active_t['x'] = np.delete(active_t['x'], self.selected_indices)
@@ -514,6 +516,47 @@ class TrackEditor:
             self.optimize_racing_line(fix_endpoints=False, closed_loop=False)
         elif event.key == 'p':
             self.optimize_racing_line(fix_endpoints=False, closed_loop=True)
+
+        # --- SPLICING OVERWRITE FEATURES ---
+        elif event.key == 'c':
+            if self.selected_indices:
+                active_t = self.tracks[self.active_track_idx]
+                self.clipboard = (
+                    active_t['x'][self.selected_indices].copy(),
+                    active_t['y'][self.selected_indices].copy()
+                )
+                print(f"Copied {len(self.selected_indices)} waypoints to clipboard.")
+            else:
+                print("Nothing selected to copy. Use box selection first.")
+                
+        elif event.key == 'v':
+            if self.clipboard is not None:
+                self.push_undo()
+                clip_x, clip_y = self.clipboard
+                active_t = self.tracks[self.active_track_idx]
+                
+                # Figure out where to paste based on mouse position
+                hover_idx = self.get_closest_point(self.current_mouse_event, ignore_mode=True)
+                
+                if hover_idx is not None:
+                    insert_start = hover_idx + 1 
+                else:
+                    insert_start = len(active_t['x'])
+                
+                insert_end = insert_start + len(clip_x)
+                
+                # Overwrite the exact number of incoming points
+                active_t['x'] = np.concatenate((active_t['x'][:insert_start], clip_x, active_t['x'][insert_end:]))
+                active_t['y'] = np.concatenate((active_t['y'][:insert_start], clip_y, active_t['y'][insert_end:]))
+                
+                # Automatically select the newly pasted points
+                self.selected_indices = list(range(insert_start, insert_start + len(clip_x)))
+                
+                self._refresh_visuals()
+                print(f"Path {self.active_track_idx + 1}: Overwrote {len(clip_x)} waypoints starting at index {insert_start}.")
+            else:
+                print("Clipboard is empty. Copy some waypoints first.")
+        # -----------------------------
 
         # Translation controls (Arrow Keys)
         elif event.key in ['up', 'down', 'left', 'right'] and self.selected_indices:
@@ -769,9 +812,9 @@ class TrackEditor:
 
 if __name__ == "__main__":
     REFERENCE_TRACK = "competition_code/waypoints/Monza.npz"
-    EDITABLE_PATH_1 = "competition_code/waypoints/waypointsPrimary.npz"
-    EDITABLE_PATH_2 = "competition_code/waypoints/output_theWaypoints.npz" 
-    
+    EDITABLE_PATH_1 = "competition_code/waypoints/output_output_theWaypoints.npz"
+    EDITABLE_PATH_2 = "competition_code/waypoints/output_output_theWaypoints.npz"
+
     if os.path.exists(REFERENCE_TRACK) and os.path.exists(EDITABLE_PATH_1) and os.path.exists(EDITABLE_PATH_2):
         print(f"Loading {REFERENCE_TRACK} as boundaries...")
         print("Loading editable paths...")
