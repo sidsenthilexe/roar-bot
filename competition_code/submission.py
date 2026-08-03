@@ -93,7 +93,7 @@ class RoarCompetitionSolution:
 
         self.steer_controller.set_setpoint(target_steer)
         steer_control = self.steer_controller.calculate(current_steer)
-        steer_control = Tuner.tune_steer(steer_control, self.current_waypoint_idx)
+        #steer_control = Tuner.tune_steer(steer_control, self.current_waypoint_idx)
         steer_normalized = np.clip(-steer_control, -1.0, 1.0)
 
         #throttle_normalized, brake_normalized, steer_control = MathUtil.clamp_inputs(throttle_normalized, brake_normalized, steer_control)
