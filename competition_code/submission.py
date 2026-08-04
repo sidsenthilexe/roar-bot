@@ -71,12 +71,12 @@ class RoarCompetitionSolution:
         vehicle_velocity = self.velocity_sensor.get_last_gym_observation()
         vehicle_velocity_norm = np.linalg.norm(vehicle_velocity)
 
-        
         self.current_waypoint_idx = filter_waypoints(
             vehicle_location,
             self.current_waypoint_idx,
             self.maneuverable_waypoints
         ) 
+
         target_speed = SpeedMap.get_target_speed(vehicle_velocity_norm, self)
         target_speed = Tuner.tune_target_speed(target_speed, self.current_waypoint_idx)
 
@@ -93,8 +93,8 @@ class RoarCompetitionSolution:
 
         self.steer_controller.set_setpoint(target_steer)
         steer_control = self.steer_controller.calculate(current_steer)
-        steer_normalized = np.clip(-steer_control, -1.0, 1.0)
-        #steer_normalized = Tuner.tune_steer(steer_normalized, self.current_waypoint_idx)
+        steer_control = Tuner.tune_steer(-steer_control, self.current_waypoint_idx)
+        steer_normalized = np.clip(steer_control, -1.0, 1.0)
 
         self.speeds_plot.generate(target_speed, vehicle_velocity_norm)
         self.steers_plot.generate(target_steer, current_steer)
