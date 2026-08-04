@@ -14,7 +14,7 @@ class Tuner:
         return 1.3
 
     def tune_steer(steer, wp):
-        if (850 <= wp <= 870): return abs(steer*2)
+        if (850 <= wp <= 870): return abs(steer)
         else: return steer
 
     @staticmethod
