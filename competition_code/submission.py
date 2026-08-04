@@ -94,6 +94,7 @@ class RoarCompetitionSolution:
         self.steer_controller.set_setpoint(target_steer)
         steer_control = self.steer_controller.calculate(current_steer)
         steer_normalized = np.clip(-steer_control, -1.0, 1.0)
+        steer_normalized = Tuner.tune_steer(steer_normalized, self.current_waypoint_idx)
 
         self.speeds_plot.generate(target_speed, vehicle_velocity_norm)
         self.steers_plot.generate(target_steer, current_steer)

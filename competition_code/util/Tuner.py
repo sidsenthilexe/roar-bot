@@ -13,6 +13,10 @@ class Tuner:
         if (target_speed < 35): return 1.2
         return 1.3
 
+    def tune_steer(steer, wp):
+        if (745 <= wp <= 870): return steer*2
+        else: return steer
+
     @staticmethod
     def tune_steer_lookahead(lookahead, waypoint):
         if (1300 <= waypoint <= 1325 or 1400 <= waypoint <= 1425): return lookahead + 7
