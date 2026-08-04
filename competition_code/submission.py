@@ -7,10 +7,9 @@ from typing import List, Tuple, Dict, Optional
 import roar_py_interface
 import numpy as np
 import matplotlib.pyplot as plt
-from util.SpeedMap import SpeedMap
 from util.MathUtil import MathUtil
 from util.PIDController import PIDController
-from util.SteerController import SteerController
+from util.MovementController import MovementController
 from util.Tuner import Tuner
 from util.Plotter import Plotter
 
@@ -77,7 +76,7 @@ class RoarCompetitionSolution:
             self.maneuverable_waypoints
         ) 
 
-        target_speed = SpeedMap.get_target_speed(vehicle_velocity_norm, self)
+        target_speed = MovementController.get_target_speed(vehicle_velocity_norm, self)
         target_speed = Tuner.tune_target_speed(target_speed, self.current_waypoint_idx)
 
         self.speed_controller.set_setpoint(target_speed)
@@ -87,7 +86,7 @@ class RoarCompetitionSolution:
 
         self.steer_controller.kp = Tuner.tune_steer_kP(target_speed)
 
-        target_steer = SteerController.get_target_heading(vehicle_velocity_norm, self, vehicle_location)
+        target_steer = MovementController.get_target_heading(vehicle_velocity_norm, self, vehicle_location)
         current_steer = MathUtil.normalize_rad(vehicle_rotation[2])
         target_steer = MathUtil.normalize_continuous_target_rads(current_steer, target_steer)
 
