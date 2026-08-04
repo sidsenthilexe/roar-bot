@@ -4,7 +4,7 @@ class Tuner:
 
     @staticmethod
     def tune_target_speed(target_speed, waypoint):
-        if (900 <= waypoint <= 1325 or 1400 <= waypoint <= 1425): return target_speed * 10/7
+        if (1300 <= waypoint <= 1325 or 1400 <= waypoint <= 1425): return target_speed * 10/7
         if (1800 <= waypoint <= 1900): return target_speed * 12/7
         if (1900 <= waypoint <= 2000): return target_speed * 10/7
         if (745 <= waypoint <= 870): return target_speed * 8/7
