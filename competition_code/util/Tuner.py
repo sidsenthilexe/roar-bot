@@ -22,7 +22,7 @@ class Tuner:
 
     @staticmethod
     def tune_steer_lookahead(lookahead, waypoint):
-        if (1300 <= waypoint <= 1325 or 1400 <= waypoint <= 1425): return lookahead + 6
+        if (1300 <= waypoint <= 1325 or 1400 <= waypoint <= 1425): return lookahead + 7
         if (1800 <= waypoint <= 1900 or 745 <= waypoint < 838): return lookahead + 4
         if (450 <= waypoint < 490 or 2550 <= waypoint <= 2600): return lookahead + 2
         return lookahead  
