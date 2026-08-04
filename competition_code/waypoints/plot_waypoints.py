@@ -393,6 +393,12 @@ class TrackEditor:
         if event.inaxes != self.ax or event.button != 1: 
             return
         
+        # --- NEW CODE: Print the index of any clicked waypoint ---
+        clicked_idx = self.get_closest_point(event, ignore_mode=True)
+        if clicked_idx is not None:
+            print(f"Path {self.active_track_idx + 1} Waypoint Index: {clicked_idx}")
+        # ---------------------------------------------------------
+
         self._ind = self.get_closest_point(event)
         
         if self._ind is not None:
