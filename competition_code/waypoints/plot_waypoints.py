@@ -393,12 +393,6 @@ class TrackEditor:
         if event.inaxes != self.ax or event.button != 1: 
             return
         
-        # --- NEW CODE: Print the index of any clicked waypoint ---
-        clicked_idx = self.get_closest_point(event, ignore_mode=True)
-        if clicked_idx is not None:
-            print(f"Path {self.active_track_idx + 1} Waypoint Index: {clicked_idx}")
-        # ---------------------------------------------------------
-
         self._ind = self.get_closest_point(event)
         
         if self._ind is not None:
@@ -818,8 +812,8 @@ class TrackEditor:
 
 if __name__ == "__main__":
     REFERENCE_TRACK = "competition_code/waypoints/Monza.npz"
-    EDITABLE_PATH_1 = "competition_code/waypoints/theWaypoints.npz"
-    EDITABLE_PATH_2 = "competition_code/waypoints/waypointsPrimary.npz"
+    EDITABLE_PATH_1 = "competition_code/waypoints/output_theWaypoints.npz"
+    EDITABLE_PATH_2 = "competition_code/waypoints/output_theWaypoints.npz"
 
     if os.path.exists(REFERENCE_TRACK) and os.path.exists(EDITABLE_PATH_1) and os.path.exists(EDITABLE_PATH_2):
         print(f"Loading {REFERENCE_TRACK} as boundaries...")
