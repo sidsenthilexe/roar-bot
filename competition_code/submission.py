@@ -56,7 +56,7 @@ class RoarCompetitionSolution:
             self.maneuverable_waypoints
         )
 
-        self.speed_controller = PIDController(1.0, 0.1, 0.1, 0.05)
+        self.speed_controller = PIDController(1.0, 0.0, 0.1, 0.05)
         self.speed_controller.set_iZone(5)
         self.steer_controller = PIDController(1.0, 0.0, 0.0, 0.05)
 
