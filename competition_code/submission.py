@@ -57,7 +57,7 @@ class RoarCompetitionSolution:
         )
 
         self.speed_controller = PIDController(1.0, 0.0, 0.1, 0.05)
-        self.speed_controller.set_iZone(2)
+        self.speed_controller.set_iZone(5)
         self.steer_controller = PIDController(1.0, 0.0, 0.0, 0.05)
 
         self.speeds_plot = Plotter([], [], [], "Speeds", "Target Speed", "Current Speed", [8, 4], [0, 100], 2769)
