@@ -58,7 +58,7 @@ class RoarCompetitionSolution:
 
         self.speed_controller = PIDController(1.0, 0.1, 0.1, 0.05)
         self.speed_controller.set_iZone(5)
-        self.steer_controller = PIDController(1.0, 0.0, 0.0, 0.05)
+        self.steer_controller = PIDController(1.2, 0.0, 0.0, 0.05)
 
         self.speeds_plot = Plotter([], [], [], "Speeds", "Target Speed", "Current Speed", [8, 4], [0, 100], 2769)
         self.steers_plot = Plotter([], [], [], "Steers", "Target Steer", "Current Steer", [8, 4], [-4, 4], 2769)
@@ -85,15 +85,15 @@ class RoarCompetitionSolution:
         throttle_normalized = np.clip(throttle_control, 0.0, 1.0)
         brake_normalized = np.clip(-throttle_control, 0.0, 1.0)
 
-        self.steer_controller.kp = Tuner.tune_steer_kP(target_speed)
+        self.steer_controller.kp = 1.2 if (target_speed < 35) else 1.3
 
         target_steer = MovementController.get_target_heading(vehicle_velocity_norm, self, vehicle_location)
         current_steer = MathUtil.normalize_rad(vehicle_rotation[2])
         target_steer = MathUtil.normalize_continuous_target_rads(current_steer, target_steer)
 
         self.steer_controller.set_setpoint(target_steer)
-        steer_control = self.steer_controller.calculate(current_steer)
-        steer_control = Tuner.tune_steer(-steer_control, self.current_waypoint_idx)
+        steer_control = -self.steer_controller.calculate(current_steer)
+        steer_control = Tuner.tune_steer(steer_control, self.current_waypoint_idx)
         steer_normalized = np.clip(steer_control, -1.0, 1.0)
 
         self.speeds_plot.generate(target_speed, vehicle_velocity_norm)
