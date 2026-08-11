@@ -32,8 +32,6 @@ class Tuner:
 
     @staticmethod
     def tune_steer(steer, waypoint):
-        #if (490 <= waypoint <= 510): return steer * 2.0
-        #if (510 <= waypoint <= 540): return max(steer, 0)
         if (1855 <= waypoint <= 1900): return max(steer * 3.0, 0)
         if (830 <= waypoint <= 860): return max(steer * 2.0, 0)
         return steer
@@ -45,4 +43,8 @@ class Tuner:
                 return lookahead + a
         return lookahead
 
+    @staticmethod
+    def tune_speed_lookahead(lookahead, waypoint):
+        if (605 <= waypoint <= 675): return lookahead - 20
+        return lookahead
     
