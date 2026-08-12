@@ -108,7 +108,7 @@ class RoarCompetitionSolution:
             "target_gear": 0
         }
 
-        print(f"CURRENT: {self.current_waypoint_idx}, SPEED: {vehicle_velocity_norm}, TARGET: {target_speed}, THROTTLE: {throttle_normalized}, BRAKE: {brake_normalized}, STEER: {steer_normalized}")
+        print(f"CURRENT: {self.current_waypoint_idx}, SPEED: {vehicle_velocity_norm}, TARGET: {target_speed}, THROTTLE: {throttle_normalized}, BRAKE: {brake_normalized}, STEER: {steer_normalized}, TARGET_ANGLE: {target_steer}, CURRENT_ANGLE: {current_steer}")
 
         #print(f"Steer: {steer_normalized}")
         #print(f"WP: {self.current_waypoint_idx}, Radius: {self.radii_data[self.current_waypoint_idx]}, Target: {target_speed:.3f}")
