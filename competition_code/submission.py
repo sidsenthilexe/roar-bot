@@ -45,7 +45,7 @@ class RoarCompetitionSolution:
         self.collision_sensor = collision_sensor
     
     async def initialize(self) -> None:
-        self.maneuverable_waypoints = roar_py_interface.RoarPyWaypoint.load_waypoint_list(np.load("waypoints/monza_ext_test.npz"))
+        self.maneuverable_waypoints = roar_py_interface.RoarPyWaypoint.load_waypoint_list(np.load("waypoints/waypointsV7.npz"))
 
         vehicle_location = self.location_sensor.get_last_gym_observation()
 
