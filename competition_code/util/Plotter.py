@@ -20,7 +20,7 @@ class Plotter:
         self.name = name
 
     def generate(self, target, current):
-        if (500 <= self.step_counter <= 1000): print("Plotting " + self.name + " at step " + str(self.step_counter))
+        if (500 <= self.step_counter <= 1500): print("Plotting " + self.name + " at step " + str(self.step_counter))
         self.step_counter += 1
         self.time_steps.append(self.step_counter)
         self.targets.append(target)
