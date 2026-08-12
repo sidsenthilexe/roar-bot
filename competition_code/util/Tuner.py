@@ -46,7 +46,7 @@ class Tuner:
 
     @staticmethod
     def tune_speed_lookahead(lookahead, waypoint):
-        if (370 <= waypoint <= 445): return lookahead - 5
+        if (370 <= waypoint <= 425): return lookahead - 5
         if (605 <= waypoint <= 675): return lookahead - 20
         if (745 <= waypoint <= 870): return lookahead - 23
         return lookahead
