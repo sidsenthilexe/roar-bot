@@ -46,4 +46,4 @@ class Plotter:
             percent_full_throttle = (self.full_throttle_steps / self.step_counter) * 100
             percent_on_throttle = (self.throttle_steps / self.step_counter) * 100
             percent_on_brake = (self.braking_steps / self.step_counter) * 100
-            print(f"Percentage of lap on full throttle: {percent_full_throttle}\nPercentage of lap on some throttle: {percent_on_throttle}\nPercentage of lap on brake: {percent_on_brake}")
+            print(f"{self.name}\nPercentage of lap on full throttle: {percent_full_throttle}\nPercentage of lap on some throttle: {percent_on_throttle}\nPercentage of lap on brake: {percent_on_brake}")
