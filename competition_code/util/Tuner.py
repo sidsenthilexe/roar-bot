@@ -2,7 +2,7 @@ import numpy as np
 
 class Tuner:
 
-    WAYPOINT_TO_SPEEDS = [
+    WAYPOINT_TO_TARGET_SPEED = [
         (0, 300, 10/7), 
         (300, 510, 38/35), 
         (600, 710, 19/14), 
@@ -13,7 +13,7 @@ class Tuner:
         (2550, np.inf, 38/35)
     ]
 
-    WAYPOINT_TO_LOOKAHEAD = [
+    WAYPOINT_TO_STEER_LOOKAHEAD = [
         (450, 490, 4), 
         (660, 700, 4), 
         (745, 838, 4), 
@@ -25,7 +25,7 @@ class Tuner:
 
     @staticmethod
     def tune_target_speed(target_speed, waypoint):
-        for s, e, f in Tuner.WAYPOINT_TO_SPEEDS:
+        for s, e, f in Tuner.WAYPOINT_TO_TARGET_SPEED:
             if s <= waypoint <= e:
                 return target_speed * f
         return target_speed * 44/35
@@ -38,7 +38,7 @@ class Tuner:
 
     @staticmethod
     def tune_steer_lookahead(lookahead, waypoint):
-        for s, e, a in Tuner.WAYPOINT_TO_LOOKAHEAD:
+        for s, e, a in Tuner.WAYPOINT_TO_STEER_LOOKAHEAD:
             if s <= waypoint <= e:
                 return lookahead + a
         return lookahead
@@ -46,5 +46,6 @@ class Tuner:
     @staticmethod
     def tune_speed_lookahead(lookahead, waypoint):
         if (605 <= waypoint <= 675): return lookahead - 20
+        if (745 <= waypoint <= 870): return lookahead - 20
         return lookahead
     
