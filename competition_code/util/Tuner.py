@@ -6,7 +6,7 @@ class Tuner:
         (0, 300, 10/7), 
         (300, 510, 38/35), 
         (600, 710, 19/14), 
-        (745, 870, 6/5), 
+        (745, 870, 27/20), 
         (1300, 1325, 10/7), 
         (1400, 1425, 10/7), 
         (1750, 2000, 11/7), 
@@ -46,6 +46,6 @@ class Tuner:
     @staticmethod
     def tune_speed_lookahead(lookahead, waypoint):
         if (605 <= waypoint <= 675): return lookahead - 20
-        if (745 <= waypoint <= 870): return lookahead - 20
+        if (745 <= waypoint <= 870): return lookahead - 25
         return lookahead
     
