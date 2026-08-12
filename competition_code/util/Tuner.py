@@ -18,6 +18,7 @@ class Tuner:
         (660, 700, 4), 
         (745, 838, 4), 
         (1300, 1325, 7), 
+        (1325, 1400, 2), 
         (1400, 1425, 7), 
         (1800, 1900, 9), 
         (2550, 2600, 2)
@@ -37,6 +38,7 @@ class Tuner:
         if (1855 <= waypoint <= 1900): return max(steer * 3.0, 0)
         if (830 <= waypoint < 860): return max(steer * 1.5, 0)
         if (860 <= waypoint <= 880): return steer * 0.4
+        if (1425 <= waypoint <= 1450): return min(steer, 0)
         return steer
 
     @staticmethod
