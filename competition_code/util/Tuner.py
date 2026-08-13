@@ -41,7 +41,7 @@ class Tuner:
         if (1425 <= waypoint <= 1450): return min(steer, 0)
         if (2570 <= waypoint <= 2600): return steer * 0.9
         if (2610 <= waypoint <= 2620): return steer * 0.5
-        if (waypoint > 2620): return steer * 0.05
+        if (waypoint > 2620): return steer * 0.075 if steer < 0 else steer * 0.05
         return steer
 
     @staticmethod
