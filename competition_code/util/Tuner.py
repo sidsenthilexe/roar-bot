@@ -16,7 +16,7 @@ class Tuner:
     WAYPOINT_TO_STEER_LOOKAHEAD = [
         (450, 490, 4), 
         (660, 700, 4), 
-        (745, 838, 4), 
+        (745, 880, 5), 
         (1300, 1325, 7), 
         (1325, 1400, 2), 
         (1400, 1425, 7), 
@@ -36,7 +36,8 @@ class Tuner:
         if (490 <= waypoint < 505): return steer * 0.75
         if (510 <= waypoint <= 520): return max(steer * 2.0, 0)
         if (1855 <= waypoint <= 1900): return max(steer * 3.0, 0)
-        if (830 <= waypoint < 860): return max(steer * 1.5, 0)
+        if (830 <= waypoint <= 845): return max(steer * 1.0, 0)
+        if (845 < waypoint < 860): return max(steer * 1.5, 0)
         if (860 <= waypoint <= 880): return steer * 0.4
         if (1425 <= waypoint <= 1450): return min(steer, 0)
         if (2550 <= waypoint <= 2600): return steer * 0.75
