@@ -85,6 +85,8 @@ class RoarCompetitionSolution:
         throttle_control = self.speed_controller.calculate(vehicle_velocity_norm)
         throttle_normalized = np.clip(throttle_control, 0.0, 1.0)
         brake_normalized = np.clip(-throttle_control, 0.0, 1.0)
+        
+        throttle_normalized, brake_normalized = Tuner.tune_inputs(self.current_waypoint_idx, throttle_normalized, brake_normalized)
 
         self.steer_controller.kp = 1.2 if (target_speed < 35) else 1.3
 
