@@ -23,7 +23,7 @@ class Plotter:
         self.name = name
 
     def generate(self, target, current, throttle, brake):
-        if (0 <= self.step_counter <= 1500 or self.step_counter > 5900): print("Plotting " + self.name + " at step " + str(self.step_counter))
+        if (0 <= self.step_counter <= 1500): print("Plotting " + self.name + " at step " + str(self.step_counter))
         self.step_counter += 1
 
         if (throttle >= 0.99): self.full_throttle_steps += 1
