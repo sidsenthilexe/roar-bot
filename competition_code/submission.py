@@ -12,6 +12,7 @@ from util.PIDController import PIDController
 from util.MovementController import MovementController
 from util.Tuner import Tuner
 from util.Plotter import Plotter
+import time
 
 def filter_waypoints(location : np.ndarray, current_idx: int, waypoints : List[roar_py_interface.RoarPyWaypoint]) -> int:
     def dist_to_waypoint(waypoint : roar_py_interface.RoarPyWaypoint):
@@ -67,6 +68,7 @@ class RoarCompetitionSolution:
     async def step(
         self
     ) -> None:
+        time.sleep(0.05)
         vehicle_location = self.location_sensor.get_last_gym_observation()
         vehicle_rotation = self.rpy_sensor.get_last_gym_observation()
         vehicle_velocity = self.velocity_sensor.get_last_gym_observation()
