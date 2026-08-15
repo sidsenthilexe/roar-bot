@@ -71,10 +71,11 @@ class PIDController:
         self.kd = kd
     
     def set_iZone(self, iZone):
-        if (type(iZone) != int or type(iZone) != float):
+        if (type(iZone) != int and type(iZone) != float):
             raise TypeError("IZone must be int or float")
         if (iZone < 0):
             raise ValueError("IZone must be non-negative")
+        self.i_zone = iZone
 
     def set_setpoint(self, setpoint):
         self.setpoint = setpoint

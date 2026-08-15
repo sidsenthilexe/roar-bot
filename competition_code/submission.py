@@ -7,10 +7,9 @@ from typing import List, Tuple, Dict, Optional
 import roar_py_interface
 import numpy as np
 import matplotlib.pyplot as plt
-from util.SpeedMap import SpeedMap
 from util.MathUtil import MathUtil
 from util.PIDController import PIDController
-from util.SteerController import SteerController
+from util.MovementController import MovementController
 from util.Tuner import Tuner
 from util.Plotter import Plotter
 
@@ -46,7 +45,7 @@ class RoarCompetitionSolution:
         self.collision_sensor = collision_sensor
     
     async def initialize(self) -> None:
-        self.maneuverable_waypoints = roar_py_interface.RoarPyWaypoint.load_waypoint_list(np.load("waypoints/theWaypoints.npz"))
+        self.maneuverable_waypoints = roar_py_interface.RoarPyWaypoint.load_waypoint_list(np.load("waypoints/waypointsV7.npz"))
 
         vehicle_location = self.location_sensor.get_last_gym_observation()
 
@@ -58,9 +57,11 @@ class RoarCompetitionSolution:
         )
 
         self.speed_controller = PIDController(1.0, 0.1, 0.1, 0.05)
-        self.steer_controller = PIDController(1.0, 0.0, 0.0, 0.05)
+        self.speed_controller.set_iZone(5)
+        self.steer_controller = PIDController(1.2, 0.0, 0.0, 0.05)
 
         self.speeds_plot = Plotter([], [], [], "Speeds", "Target Speed", "Current Speed", [8, 4], [0, 100], 2769)
+        self.speeds_plot_full = Plotter([], [], [], "Speeds_3", "Target Speed", "Current Speed", [8, 4], [0, 100], 6450)
         self.steers_plot = Plotter([], [], [], "Steers", "Target Steer", "Current Steer", [8, 4], [-4, 4], 2769)
 
     async def step(
@@ -71,34 +72,37 @@ class RoarCompetitionSolution:
         vehicle_velocity = self.velocity_sensor.get_last_gym_observation()
         vehicle_velocity_norm = np.linalg.norm(vehicle_velocity)
 
-        
         self.current_waypoint_idx = filter_waypoints(
             vehicle_location,
             self.current_waypoint_idx,
             self.maneuverable_waypoints
         ) 
-        target_speed = SpeedMap.get_target_speed(vehicle_velocity_norm, self)
+
+        target_speed = MovementController.get_target_speed(vehicle_velocity_norm, self)
         target_speed = Tuner.tune_target_speed(target_speed, self.current_waypoint_idx)
 
         self.speed_controller.set_setpoint(target_speed)
         throttle_control = self.speed_controller.calculate(vehicle_velocity_norm)
         throttle_normalized = np.clip(throttle_control, 0.0, 1.0)
         brake_normalized = np.clip(-throttle_control, 0.0, 1.0)
+        
+        throttle_normalized, brake_normalized = Tuner.tune_inputs(self.current_waypoint_idx, throttle_normalized, brake_normalized)
 
-        self.steer_controller.kp = Tuner.decide_steer_pid(target_speed)
+        self.steer_controller.kp = 1.2 if (target_speed < 35) else 1.3
 
-        target_steer = SteerController.get_target_heading(vehicle_velocity_norm, self, vehicle_location)
+        target_steer = MovementController.get_target_heading(vehicle_velocity_norm, self, vehicle_location)
         current_steer = MathUtil.normalize_rad(vehicle_rotation[2])
         target_steer = MathUtil.normalize_continuous_target_rads(current_steer, target_steer)
 
         self.steer_controller.set_setpoint(target_steer)
-        steer_control = self.steer_controller.calculate(current_steer)
-        steer_normalized = np.clip(-steer_control, -1.0, 1.0)
+        steer_control = -self.steer_controller.calculate(current_steer)
+        steer_control = np.clip(steer_control, -1.0, 1.0)
+        steer_control = Tuner.tune_steer(steer_control, self.current_waypoint_idx)
+        steer_normalized = np.clip(steer_control, -1.0, 1.0)
 
-        #throttle_normalized, brake_normalized, steer_control = MathUtil.clamp_inputs(throttle_normalized, brake_normalized, steer_control)
-
-        self.speeds_plot.generate(target_speed, vehicle_velocity_norm)
-        self.steers_plot.generate(target_steer, current_steer)
+        self.speeds_plot.generate(target_speed, vehicle_velocity_norm, throttle_normalized, brake_normalized)
+        self.speeds_plot_full.generate(target_speed, vehicle_velocity_norm, throttle_normalized, brake_normalized)
+        self.steers_plot.generate(target_steer, current_steer, 0.0, 0.0)
 
         control = {
             "throttle": throttle_normalized,
@@ -109,7 +113,7 @@ class RoarCompetitionSolution:
             "target_gear": 0
         }
 
-        print(f"CURRENT: {self.current_waypoint_idx}, SPEED: {vehicle_velocity_norm}, TARGET: {target_speed}, THROTTLE: {throttle_normalized}, BRAKE: {brake_normalized}, STEER: {steer_normalized}")
+        print(f"CURRENT: {self.current_waypoint_idx}, SPEED: {vehicle_velocity_norm}, TARGET: {target_speed}, THROTTLE: {throttle_normalized}, BRAKE: {brake_normalized}, STEER: {steer_normalized}, TARGET_ANGLE: {target_steer}, CURRENT_ANGLE: {current_steer}")
 
         #print(f"Steer: {steer_normalized}")
         #print(f"WP: {self.current_waypoint_idx}, Radius: {self.radii_data[self.current_waypoint_idx]}, Target: {target_speed:.3f}")
