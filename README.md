@@ -1,9 +1,14 @@
 <sub>Initial fork from [augcog/ROAR_Competition](https://github.com/augcog/ROAR_Competition)</sub>
+
+>[!WARNING]
+>* `main` is the only branch which has a valid `competition_runner.py` file and has been tested on Windows.  
+>* If you are pulling new changes from the repo after previously running the simulation run `git restore .` before `git pull`
+
 # roar-bot
 ## A bot to autonomously control a vehicle in the [CARLA simulator](https://carla.org/)
 This program was written in Python, and is being designed to race on UC Berkeley's [Monza Map](https://roar.berkeley.edu/monza-map/), published by [Berkeley ROAR Racing](https://roar.berkeley.edu/).  
 
-The current iteration of the bot completes 3 laps of the Monza circuit in 335.85s ([demo video](https://youtu.be/RzKoTG5Sp48))
+The current iteration of the bot completes 3 laps of the Monza circuit in 321.8s ([demo video (previous iteration)](https://youtu.be/RzKoTG5Sp48))
 
 <img width="1011" height="569" alt="Screenshot 2026-07-21 at 15 08 18" src="https://github.com/user-attachments/assets/778019be-4173-4497-88ce-99331a557bac" />
 
