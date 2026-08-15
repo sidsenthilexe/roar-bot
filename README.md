@@ -2,7 +2,8 @@
 
 >[!WARNING]
 >* `main` is the only branch which has a valid `competition_runner.py` file and has been tested on Windows.  
->* If you are pulling new changes from the repo after previously running the simulation run `git restore .` before `git pull`
+>* If you are pulling new changes from the repo after previously running the simulation run `git restore .` before `git pull`  
+>* The CarlaUE4 process should be manually terminated in Task Manager between runs to prevent errors connecting to the Simulator
 
 # roar-bot
 ## A bot to autonomously control a vehicle in the [CARLA simulator](https://carla.org/)
