@@ -41,8 +41,8 @@ class Tuner:
         if (860 <= waypoint <= 880): return steer * 0.4
         if (1425 <= waypoint <= 1450): return min(steer, 0.01)
         if (2550 <= waypoint <= 2600): return steer * 0.75
-        if (2610 <= waypoint <= 2620): return steer * 0.5
-        if (waypoint > 2620): return steer * 0.075 if steer < 0 else steer * 0.05
+        if (2610 <= waypoint <= 2620): return steer * 0.3
+        if (waypoint > 2620): return steer * 0.1 if steer < 0 else steer * 0.05
         return steer
 
     @staticmethod
@@ -55,6 +55,7 @@ class Tuner:
     @staticmethod
     def tune_inputs(wp, throttle, brake):
         if (2550 <= wp <= 2580): return (0.0, 1.0)
+        if (wp >= 2600): return (1.0, 0.0)
         if (1240 <= wp <= 1251): return (1.0, 0.0)
         return (throttle, brake)
 
@@ -65,5 +66,6 @@ class Tuner:
         if (605 <= waypoint <= 675): return lookahead - 20
         if (745 <= waypoint <= 870): return lookahead - 23
         if (2500 <= waypoint <= 2580): return lookahead - 7
+        if (waypoint >= 2580): return lookahead - 5
         return lookahead
     
