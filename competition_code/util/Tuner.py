@@ -56,7 +56,7 @@ class Tuner:
     @staticmethod
     def tune_inputs(wp, throttle, brake):
         if (2550 <= wp <= 2580): return (0.0, 1.0)
-        if (wp >= 2600): return (1.0, 0.0)
+        if (2600 <= wp): return (1.0, 0.0)
         if (1240 <= wp <= 1251): return (1.0, 0.0)
         return (throttle, brake)
 
