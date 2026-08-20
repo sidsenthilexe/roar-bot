@@ -56,7 +56,7 @@ class Tuner:
     @staticmethod
     def tune_inputs(wp, throttle, brake):
         if (2550 <= wp <= 2580): return (0.0, 1.0)
-        if (wp >= 2600): return (1.0, 0.0)
+        if (2600 <= wp): return (1.0, 0.0)
         if (1240 <= wp <= 1251): return (1.0, 0.0)
         return (throttle, brake)
 
@@ -67,6 +67,6 @@ class Tuner:
         if (605 <= waypoint <= 675): return lookahead - 20
         if (745 <= waypoint <= 870): return lookahead - 23
         if (2500 <= waypoint <= 2580): return lookahead - 7
-        if (2580 <= waypoint): return lookahead - 5
+        if (waypoint >= 2580): return lookahead - 5
         return lookahead
     
