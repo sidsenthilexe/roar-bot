@@ -396,9 +396,6 @@ class TrackEditor:
         self._ind = self.get_closest_point(event)
         
         if self._ind is not None:
-
-            print(f"Path {self.active_track_idx + 1}: Clicked waypoint {self._ind}")
-            
             # Clicked on a point - start standard drag
             self.push_undo()
             self._dragging = True
