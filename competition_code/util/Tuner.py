@@ -10,7 +10,7 @@ class Tuner:
         (1300, 1325, 10/7), 
         (1400, 1425, 10/7), 
         (1750, 2000, 11/7), 
-        (2550, np.inf, 44/35)
+        (2550, np.inf, 38/35)
     ]
 
     WAYPOINT_TO_STEER_LOOKAHEAD = [
@@ -35,7 +35,8 @@ class Tuner:
     def tune_steer(steer, waypoint):
         if (490 <= waypoint < 505): return steer * 0.75
         if (510 <= waypoint <= 520): return max(steer * 2.0, 0)
-        if (1855 <= waypoint <= 1900): return max(steer * 3.0, 0)
+        if (1855 <= waypoint <= 1900): return max(steer * 3.0, -0.02)
+        if (1900 <= waypoint <= 1910): return min(0.08, steer)
         if (830 <= waypoint <= 845): return max(steer * 0.9, 0)
         if (845 < waypoint < 860): return max(steer * 1.5, 0)
         if (860 <= waypoint <= 880): return steer * 0.4
