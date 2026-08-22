@@ -78,6 +78,8 @@ class RoarCompetitionSolution:
             self.maneuverable_waypoints
         ) 
 
+        self.speed_controller.kp = 1.2 if (2580 < self.current_waypoint_idx < 2605) else 1.1
+
         target_speed = MovementController.get_target_speed(vehicle_velocity_norm, self)
         target_speed = Tuner.tune_target_speed(target_speed, self.current_waypoint_idx)
 
