@@ -68,7 +68,6 @@ class RoarCompetitionSolution:
     async def step(
         self
     ) -> None:
-        time.sleep(0.05)
         vehicle_location = self.location_sensor.get_last_gym_observation()
         vehicle_rotation = self.rpy_sensor.get_last_gym_observation()
         vehicle_velocity = self.velocity_sensor.get_last_gym_observation()
