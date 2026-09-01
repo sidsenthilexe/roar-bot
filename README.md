@@ -1,7 +1,8 @@
 <sub>Initial fork from [augcog/ROAR_Competition](https://github.com/augcog/ROAR_Competition)</sub>
 
 >[!WARNING]
->* `main` is the only branch which has a valid `competition_runner.py` file and has been tested on Windows.  
+>* `main` is the only branch which has a valid `competition_runner.py` file and has been tested on Windows.
+>* Using the README install instructions is recommended.
 >* If you are pulling new changes from the repo after previously running the simulation run `git restore .` before `git pull`  
 >* The CarlaUE4 process should be manually terminated in Task Manager between runs to prevent errors connecting to the Simulator
 
